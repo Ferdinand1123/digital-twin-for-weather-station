@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Station Digital Twin</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+
+        <h1>Reconstruct weather station data</h1>
+        <label class="section-label" for="">Data input</label>
+        <form action="http://localhost:3000/api/data-submission" method="post" enctype="multipart/form-data">
+            <div id="data-input" class="box">
+                <div id="measurements">
+                    <p class="label">Measurements</p>
+                    <div id="measurement-input">
+                        <input type="file" name="measurements" id="measurment" multiple>
+                    </div>
+                </div>
+                <div id="model">
+                    <p class="label">Model</p>
+                    <div id="model-input">
+                        <input type="file" name="model" id="model">
+                    </div>
+                </div>
+            </div>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+</body>
+
+</html>
