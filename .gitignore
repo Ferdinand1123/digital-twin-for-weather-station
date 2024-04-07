@@ -1,3 +1,5 @@
 crai
 .vscode
-service/__pycache__
+__pycache__
+__logs__
+output.png

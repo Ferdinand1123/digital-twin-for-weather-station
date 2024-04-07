@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Station Digital Twin</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Reconstruct weather station data</h1>
+        <label class="section-label" for="">Data input</label>
+        <div id="data-input" class="box">
+            <div>
+                <p class="label">Measurements</p>
+                <div id="measurement-input">
+                    <input type="file" id="measurement" multiple>
+                </div>
+            </div>
+            <div>
+                <p class="label">Model</p>
+                <div id="model-input">
+                    <input type="file" id="model">
+                </div>
+            </div>
+        </div>
+        <!-- Specify button type as "button" -->
+        <button type="button" onclick="submitForm()">Submit</button>
+    </div>
+    <div class="container">
+        <label class="section-label" for="">Uploaded Datasets</label>
+        <div id="dataset-list" class="box">
+            
+        </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

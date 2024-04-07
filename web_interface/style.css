@@ -63,3 +63,11 @@ button {
     border-radius: 5px;
     cursor: pointer;
 }
+
+
+#dataset-list>li {
+    list-style: none;
+    display: flex;
+    flex-direction: row;
+    margin: 10px 5px;
+}
