@@ -124,8 +124,9 @@ class TrainingExecuter():
     def make_zip_folder(self, folder_path):
         shutil.make_archive(folder_path, 'zip', folder_path)
         zip_file_name = self.station.name + '_model.zip'
-        shutil.move(folder_path + '.zip', self.target_dir.name + '/' + zip_file_name)
-        return zip_file_name
+        new_zip_file_path = self.target_dir.name + '/' + zip_file_name
+        shutil.move(folder_path + '.zip', new_zip_file_path)
+        return new_zip_file_path
 
     def cleanup(self):
         self.target_dir.cleanup()
