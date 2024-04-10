@@ -1,5 +1,5 @@
-from crai.station_reconstruct.dat_to_nc import DatToNcConverter
 from station.station import StationData
+from station.dat_to_nc_converter import DatToNcConverter
 from era5.era5_download_hook import Era5DownloadHook
 from era5.era5_from_grib_to_nc import Era5DataFromGribToNc
 
