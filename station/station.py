@@ -1,6 +1,6 @@
 import pandas as pd
 
-from crai.station_reconstruct.dat_to_nc import DatToNcConverter
+from station.dat_to_nc_converter import DatToNcConverter
 
 class StationData:
         
