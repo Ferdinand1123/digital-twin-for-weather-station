@@ -3,7 +3,7 @@ matplotlib.use('Agg')  # Set the backend to Agg (non-interactive)
 
 import matplotlib.pyplot as plt
 
-class InfillingsPlotter():
+class InfillingPlotter():
     def __init__(self):
         self.input_df = None
         self.output_df = None
@@ -26,7 +26,7 @@ class InfillingsPlotter():
         self.full_df["Measured"] = self.full_df["Measured"] - 273.15
         self.full_df["Reconstructed"] = self.full_df["Reconstructed"] - 273.15
     
-    def plot(self, path="output.png"):
+    def plot(self, path):
         self._transform_df()
         assert not self.full_df.empty, "Dataframe is empty"
         

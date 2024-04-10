@@ -53,10 +53,19 @@ p.label {
    margin: 5px 0;
 }
 
+.cta-area {
+    display: flex;
+    margin-left: auto;
+}
+
+.cta-area>button {
+    margin-right: 10px;
+}
+
 button {
     display: flex;
-    padding: 5px 10px;
     margin-left: auto;
+    padding: 5px 10px;
     background-color: #007bff;
     color: white;
     border: none;

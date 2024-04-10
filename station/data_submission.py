@@ -1,4 +1,7 @@
 import tempfile
+import uuid
+import shutil
+import os
 
 class DataSubmission:
     def __init__(self):
@@ -10,22 +13,24 @@ class DataSubmission:
 
     def submit(self, files, model):
         # Submit data to the server
-        self.set_dataset_name_from_files(files, model)
         print(f"Data Submission {self.name} in progress")
         print("Number of uploaded files:", len(files))
         for file in files:
             file.save(self.measurement_dir.name + "/" + file.filename)
-        self.model_path = self.model_dir.name + "/" + model.filename
-        model.save(self.model_path)
+        if model:
+            self.model_path = self.model_dir.name + "/" + model.filename
+            model.save(self.model_path)
+        self.generate_name()
         return
     
-    def set_dataset_name_from_files(self, files, model):
-        print("Getting dataset name from files", files)
+    def generate_name(self):
+        filenames = os.listdir(self.measurement_dir.name)
+        
         # use the name of the .rtf file
         rtf_file_name = None
-        for file in files:
-            if file.filename.endswith(".rtf"):
-                rtf_file_name = file.filename.split(".")[0]
+        for filename in filenames:
+            if filename.endswith(".rtf"):
+                rtf_file_name = filename.split(".")[0]
                 break
             
         rtf_file_name = rtf_file_name.replace(" ", "-")
@@ -34,10 +39,10 @@ class DataSubmission:
         rtf_file_name = rtf_file_name.strip("-")
         
         # sort the dat files by name
-        files.sort(key=lambda x: x.filename)
-        sorted_files = [file for file in files if file.filename.endswith(".dat")]
-        first_file_name = sorted_files[0].filename
-        last_file_name = sorted_files[-1].filename
+        filenames.sort()
+        sorted_files = [filename for filename in filenames if filename.endswith(".dat")]
+        first_file_name = sorted_files[0]
+        last_file_name = sorted_files[-1]
         
         # reduce filenames to numerical part (to get the dates)
         # delete all non-numeric characters from the filenames
@@ -45,9 +50,15 @@ class DataSubmission:
         last_file_name = "".join([c for c in last_file_name if c.isnumeric()])
         
         first_last_name_str = first_file_name + "-" + last_file_name
-        self.name = rtf_file_name + "_" + first_last_name_str + \
-            "_model-" + model.filename.split(".")[0]
-        
+        self.name = rtf_file_name + "_" + first_last_name_str
+        if self.model_path:
+            self.name += "_model-" + self.model_path.split("/")[-1].split(".")[0]
+          
+    def add_model(self, model_source_path):
+        self.model_path = self.model_dir.name + "/" + model_source_path.split("/")[-1]
+        shutil.copy(model_source_path, self.model_path)
+        self.generate_name()
+        return
     
     def cleanup(self):
         # Clean up the temporary directories
@@ -62,7 +73,7 @@ class DataStorage:
         self._data_submissions = {}
         
     def add_data_submission(self, data_submission: DataSubmission) -> str:
-        uid = str(hash(data_submission))
+        uid = str(uuid.uuid4())
         self._data_submissions[uid] = data_submission
         return uid
         
@@ -73,7 +84,15 @@ class DataStorage:
         # return names, uids of all available datasets
         return_list = [{
             "name": data.name,
-            "uid": uid
+            "uid": uid,
+            "has_model": data.model_path is not None,
         } for uid, data in self._data_submissions.items()]
         print("Available datasets:", return_list)
         return return_list
+    
+    def delete_data_submission(self, uid):
+        data_submission = self._data_submissions.get(uid)
+        if data_submission:
+            data_submission.cleanup()
+            del self._data_submissions[uid]
+        return

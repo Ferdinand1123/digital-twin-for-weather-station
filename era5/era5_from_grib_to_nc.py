@@ -2,13 +2,14 @@ import os
 import tempfile
 import subprocess
 
+
 class Era5DataFromGribToNc:
         
-    def __init__(self, folder_path, era5_file_path) -> None:
+    def __init__(self, folder_path, era5_target_file_path) -> None:
             self.temp_dir = tempfile.TemporaryDirectory()
             self.temp_dir_path = self.temp_dir.name
             self._convert(folder_path)
-            self._merge(era5_file_path)
+            self._merge(era5_target_file_path)
             self.temp_dir.cleanup()
 
     def _convert(self, source_path):

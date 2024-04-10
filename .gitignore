@@ -3,3 +3,4 @@ crai
 __pycache__
 __logs__
 output.png
+tmp*
