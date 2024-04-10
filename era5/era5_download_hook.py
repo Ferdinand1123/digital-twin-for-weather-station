@@ -2,8 +2,6 @@ import cdsapi
 from dotenv import load_dotenv
 import os
 
-from crai.station_reconstruct.utils import Station
-
 load_dotenv("copernicus_api.env")
 
 class Era5DownloadHook:
