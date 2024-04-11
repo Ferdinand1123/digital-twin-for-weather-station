@@ -16,10 +16,16 @@ from train_station_twin.training_executer import TrainingExecuter
 import time
 import tempfile
 
-print("Starting the server")
-print(f"using {tempfile.gettempdir()} as temporary directory")
+import logging
 
 app = Flask(__name__)
+
+# Configure Flask app to log to stdout
+app.logger.addHandler(logging.StreamHandler(sys.stdout))
+app.logger.setLevel(logging.INFO)
+
+print("Starting the server")
+print(f"using {tempfile.gettempdir()} as temporary directory")
 
 # Max content length for uploaded files
 MAX_CONTENT_LENGTH = 1024 ** 3 # 1 GB

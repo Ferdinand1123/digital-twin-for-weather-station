@@ -6,12 +6,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - 3000:3000
-      - 3030:3030
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+   
   nginx:
     image: nginx:1.19.6-alpine
     ports:
