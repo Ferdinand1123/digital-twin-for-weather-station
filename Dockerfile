@@ -14,6 +14,11 @@ COPY app.py /app.py
 COPY copernicus_api.env /copernicus_api.env
 COPY requirements.txt /requirements.txt
 
+# Install build tools including gcc and CDO
+RUN apt-get update --fix-missing
+RUN apt-get install -y gcc
+RUN apt-get install -y cdo
+
 # Clone the git repository
 RUN git clone https://github.com/FREVA-CLINT/climatereconstructionAI.git crai
 
@@ -21,6 +26,9 @@ RUN git clone https://github.com/FREVA-CLINT/climatereconstructionAI.git crai
 # install the requirements
 RUN conda env create -f /crai/environment.yml && \
     echo "conda activate crai"  >> ~/.bashrc && \
+    conda init bash && \
+    conda activate crai && \
+    pip install -e /crai && \
     pip install -r /requirements.txt
 
 # Start the flask app
