@@ -25,11 +25,10 @@ RUN git clone https://github.com/FREVA-CLINT/climatereconstructionAI.git crai
 # Activate the Conda environment & set the FLASK_APP environment variable & install the requirements
 # install the requirements
 RUN conda env create -f /crai/environment.yml && \
-    echo "conda activate crai"  >> ~/.bashrc && \
-    conda init bash && \
-    conda activate crai && \
-    pip install -e /crai && \
-    pip install -r /requirements.txt
+    conda init bash
+RUN ["conda", "run", "-n", "crai", "pip", "install", "/crai/"]
+RUN ["conda", "run", "-n", "crai", "pip", "install", "-r", "/requirements.txt"]
+
 
 # Start the flask app
 CMD ["conda", "run", "-n", "crai", "flask", "run", "--port=3000"]
