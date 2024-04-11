@@ -108,3 +108,7 @@ def delete_dataset(uid):
 @app.route('/web/<path:path>')
 def send_frontend_files(path):
     return send_file(f'./web_interface/{path}')
+
+
+if __name__ == '__main__':
+    app.run(debug=True, port=3000)

@@ -30,4 +30,4 @@ RUN ["conda", "run", "-n", "crai", "pip", "install", "-r", "./requirements.txt"]
 
 
 # Start the flask app
-CMD ["conda", "run", "-n", "crai", "flask", "run", "--port=3000"]
+CMD ["conda", "run", "-n", "crai", "gunicorn --bind 0.0.0.0:3000 app:app"]
