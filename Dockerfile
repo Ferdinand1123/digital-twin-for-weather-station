@@ -24,8 +24,7 @@ RUN git clone https://github.com/FREVA-CLINT/climatereconstructionAI.git crai
 
 # Activate the Conda environment & set the FLASK_APP environment variable & install the requirements
 # install the requirements
-RUN conda env create -f /crai/environment.yml && \
-    conda init bash
+RUN conda env create -f /crai/environment.yml && conda init bash
 RUN ["conda", "run", "-n", "crai", "pip", "install", "/crai/"]
 RUN ["conda", "run", "-n", "crai", "pip", "install", "-r", "/requirements.txt"]
 

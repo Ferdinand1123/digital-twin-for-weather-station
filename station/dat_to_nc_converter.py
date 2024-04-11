@@ -15,7 +15,6 @@ Modules used:
 
 import os
 from typing import Any
-from typing_extensions import SupportsIndex
 import numpy as np
 import xarray as xr
 from datetime import datetime
