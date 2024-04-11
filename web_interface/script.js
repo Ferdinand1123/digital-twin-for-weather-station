@@ -1,5 +1,4 @@
 window.onload = function() {
-    console.log('onload');
     list_available_datasets();
 }
 
