@@ -17,12 +17,10 @@ class FillAllTasWithValuesInNcFile():
         if len(self.values) == 1:
             value = self.values[0]
             with xr.open_dataset(self.original_path) as ds:
-                print(ds, self.original_path, self.save_to_path)
                 ds['tas'].values[:] = value
                 ds.to_netcdf(self.save_to_path)
         else:
             with xr.open_dataset(self.original_path) as ds:# Get the shape of the 'tas' variable
-                print(ds, self.original_path, self.save_to_path)
                 tas_shape = ds['tas'].shape
                 
                 # Reshape self.values to match the shape of 'tas'
