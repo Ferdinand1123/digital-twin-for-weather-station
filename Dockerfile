@@ -30,6 +30,7 @@ COPY station ./station
 COPY infilling ./infilling
 COPY train_station_twin ./train_station_twin
 COPY web_interface ./web_interface
+COPY utils ./utils
 COPY app.py ./app.py
 COPY copernicus_api.env ./copernicus_api.env
 
