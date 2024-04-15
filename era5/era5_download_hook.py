@@ -21,6 +21,7 @@ class Era5DownloadHook:
 
 
     def download_hours_on_same_day(self, year, month, day, hours, target_folder):
+        print(f"Downloading {year}-{month}-{day} {hours}")
         self._download({
             "years": [year],
             "months": [month],
@@ -29,12 +30,22 @@ class Era5DownloadHook:
         }, target_folder + f"/{year}_{month}_{day}.grib")
         
     def download_month(self, year, month, target_folder):
+        print(f"Downloading {year}-{month}")
         self._download({
             "years": [year],
             "months": [month],
             "days": range(1, 32),
             "hours": range(0, 24)
         }, target_folder + f"/{year}_{month}.grib")
+        
+    def download_year(self, year, target_folder):
+        print(f"Downloading {year}")
+        self._download({
+            "years": [year],
+            "months": range(1, 13),
+            "days": range(1, 32),
+            "hours": range(0, 24)
+        }, target_folder + f"/{year}.grib")
             
     def _download(self, date_info, save_to_file_path):
         response = self.cds.retrieve(

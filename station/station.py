@@ -28,9 +28,19 @@ class StationData:
     def get_all_months_in_df(self) -> None:
         # return all (year, month) tuples in the dataframe
         periods = self.df.index.to_period('M').unique().tolist()
-        return [(period.year, period.month) for period in periods]
+        month_dict = {}
+        for period in periods:
+            if period.year not in month_dict:
+                month_dict[period.year] = []
+            month_dict[period.year].append(period.month)
+        return month_dict
     
     def export_as_nc(self, target_directory) -> None:
         # give netcdf rights to write in the target directory
         return self.converter.load(
             location = target_directory + "/")
+
+    def __repr__(self) -> str:
+        return f"{self.name} @ {self.metadata.get('latitude')}lat," + \
+            f"{self.metadata.get('longitude')}lon between" + \
+            f"{min(self.df.time.values)} and {max(self.df.time.values)}"

@@ -4,27 +4,29 @@ import shutil
 import os
 
 class DataSubmission:
-    def __init__(self):
+    def __init__(self, name=""):
         self.data = None
         self.measurement_dir = tempfile.TemporaryDirectory()
+        self.measurement_dir_path = self.measurement_dir.name
         self.model_dir = tempfile.TemporaryDirectory()
         self.model_path = None
-        self.name = None
+        self.name = name
 
     def submit(self, files, model):
         # Submit data to the server
         print(f"Data Submission {self.name} in progress")
         print("Number of uploaded files:", len(files))
         for file in files:
-            file.save(self.measurement_dir.name + "/" + file.filename)
+            file.save(self.measurement_dir_path + "/" + file.filename)
         if model:
             self.model_path = self.model_dir.name + "/" + model.filename
             model.save(self.model_path)
-        self.generate_name()
+        if not self.name:
+            self.generate_name()
         return
     
     def generate_name(self):
-        filenames = os.listdir(self.measurement_dir.name)
+        filenames = os.listdir(self.measurement_dir_path)
         
         # use the name of the .rtf file
         rtf_file_name = None

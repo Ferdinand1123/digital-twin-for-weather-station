@@ -40,7 +40,6 @@ function submitForm() {
         list_available_datasets();
     })
     .catch(error => console.error('Error:', error));
-    
 }
 
 
@@ -92,7 +91,10 @@ function request_fill_in_for_dataset(uid) {
             document.body.removeChild(a);
         });
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => {
+        console.error('Error:', error)
+        list_available_datasets();   
+    });
 }
 
 function request_train_for_dataset(uid) {
@@ -115,7 +117,10 @@ function request_train_for_dataset(uid) {
     }).then(
         () => list_available_datasets()
         )
-    .catch(error => console.error('Error:', error));
+    .catch(error => {
+        console.error('Error:', error)
+        list_available_datasets();   
+    });
 }
 
 function request_delete_for_dataset(uid) {
@@ -128,7 +133,10 @@ function request_delete_for_dataset(uid) {
         }
         list_available_datasets();
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => {
+        console.error('Error:', error)
+        list_available_datasets();   
+    });
 }
 
 

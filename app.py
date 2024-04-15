@@ -4,6 +4,7 @@ from flask import Flask, request, send_file
 import sys
 import os
 
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from station.data_submission import DataSubmission, DataStorage
@@ -46,7 +47,7 @@ def data_submission_api_point():
 @app.route('/api/fill-in/<uid>', methods=['GET'])
 def api_fill_in_at_data_submission(uid):
     data_submission = data_storage.get_data_submission(uid)
-    folder_path = data_submission.measurement_dir.name
+    folder_path = data_submission.measurement_dir_path
     model_path = data_submission.model_path
     
     station = StationData(
@@ -69,7 +70,7 @@ def api_fill_in_at_data_submission(uid):
     
     response = send_file(output_path, as_attachment=True)
     
-    # time.sleep(100)
+    time.sleep(1000)
     
     evaluation.cleanup()
     infilling.cleanup()
@@ -81,7 +82,7 @@ def api_train_at_data_submission(uid):
     data_submission = data_storage.get_data_submission(uid)
     if not data_submission:
         return "Data submission not found", 404
-    folder_path = data_submission.measurement_dir.name
+    folder_path = data_submission.measurement_dir_path
     
     station = StationData(
         name=data_submission.name,
@@ -94,8 +95,6 @@ def api_train_at_data_submission(uid):
     data_submission.add_model(training.get_path_of_final_model())
     
     response = send_file(output_path, as_attachment=True)
-    
-    # time.sleep(100)
     
     training.cleanup()
     

@@ -25,16 +25,12 @@ RUN pip install -r requirements.txt
 EXPOSE 3000
 
 # Copy the application code into the container
-COPY era5 ./era5
-COPY station ./station
-COPY infilling ./infilling
-COPY train_station_twin ./train_station_twin
-COPY web_interface ./web_interface
-COPY utils ./utils
+
 COPY app.py ./app.py
 COPY copernicus_api.env ./copernicus_api.env
 
 COPY boot.sh ./
 
 RUN chmod +x boot.sh
+# run boot.sh within conda crai environment
 ENTRYPOINT ["./boot.sh"]

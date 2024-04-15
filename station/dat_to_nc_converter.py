@@ -116,7 +116,7 @@ class DatToNcConverter:
         self.dataframe = pd.DataFrame()
         if self.keep_original:
             self.original_df = pd.DataFrame()
-
+        print(f"Extracting {self.name}...")
         # loading bar for progress
         if first_n_files is None:
             first_n_files = len(self.files)

@@ -13,7 +13,6 @@ class FillAllTasWithValuesInNcFile():
         self._create_filled_nc_files()
         
     def _create_filled_nc_files(self):
-        print("utils/utils.py: FillAllTasWithValuesInNcFile: _create_filled_nc_files:")
         if len(self.values) == 1:
             value = self.values[0]
             with xr.open_dataset(self.original_path) as ds:
@@ -32,3 +31,74 @@ class FillAllTasWithValuesInNcFile():
                 ds.to_netcdf(self.save_to_path)
         
         return self.save_to_path
+ 
+def plot_n_steps_of_area_from_nc_file(path, n=1, vars="tas", title="", vmin=None, vmax=None):
+
+    dataset = xr.open_dataset(path)
+
+    n = min(n, dataset.time.size)
+    time_index_list = np.random.choice(dataset.time.size, n, replace=False)
+
+    lat_slice = slice(None)
+    lon_slice = slice(None)
+    _lon = dataset.lon.values[lon_slice]
+    _lat = dataset.lat.values[lat_slice]
+
+    # if not list make it a list
+    if not isinstance(vars, list):
+        vars = [vars]
+
+    for time_index in time_index_list:
+        # set title
+        title += f"\n{dataset.time.values[time_index].astype('datetime64[s]').astype('O')}"
+
+        # subtitle lat lon area
+        subtitle = f"\nLat: {pretty_lat(_lat[0])} to {pretty_lat(_lat[-1])}" + \
+            f"\nLon: {pretty_lon(_lon[0])} to {pretty_lon(_lon[-1])}"
+
+        for var in vars:
+
+            # plot
+            fig, ax = plt.subplots(
+                subplot_kw={'projection': ccrs.PlateCarree()})
+            # Plot the temperature data with a quadratic colormap
+            _data = dataset.variables[var].values[time_index, lat_slice, lon_slice]
+            pcm = ax.pcolormesh(_lon, _lat, _data, cmap='viridis',
+                                shading='auto', vmin=vmin, vmax=vmax)
+
+            # Add coastlines
+            ax.coastlines()
+
+            # Add colorbar
+            cbar = plt.colorbar(pcm, ax=ax, label='Temperature')
+
+            # Set labels and title
+            ax.set_xlabel('Longitude')
+            ax.set_ylabel('Latitude')
+            plt.title(title + (f"\n[{var}]" if len(vars) > 1 else ""))
+
+            # position title a higher
+            plt.subplots_adjust(top=1)
+            
+            # Add subtitle
+            plt.figtext(0.125, 0.05, subtitle, wrap=True, horizontalalignment='left', fontsize=12)
+
+            # Show the plot
+            plt.show()
+
+        
+        
+def pretty_lat(lat):
+    lat = round(lat, 3)
+    if lat > 0:
+        return f"{abs(lat)}°N"
+    else:
+        return f"{abs(lat)}°S"
+    
+def pretty_lon(lon):
+    lon = (lon + 180) % 360 - 180
+    lon = round(lon, 3)
+    if lon > 0:
+        return f"{abs(lon)}°E"
+    else:
+        return f"{abs(lon)}°W"

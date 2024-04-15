@@ -6,6 +6,13 @@ services:
       dockerfile: Dockerfile
     ports:
       - 3000:3000
+    volumes:
+      - ./era5:/app/era5
+      - ./utils:/app/utils
+      - ./station:/app/station
+      - ./infilling:/app/infilling
+      - ./train_station_twin:/app/train_station_twin
+      - ./web_interface:/app/web_interface
    
   nginx:
     image: nginx:1.19.6-alpine

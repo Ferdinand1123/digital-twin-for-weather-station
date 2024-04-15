@@ -23,17 +23,25 @@ class DownloadEra5ForStation(Era5Downloader):
         
     def __init__(self, station: StationData, grib_dir_path: str, hook):
         super().__init__(station, grib_dir_path, hook)
-        self.year_month_tuples = self.station.get_all_months_in_df()
+        self.years_by_month_dict = self.station.get_all_months_in_df()
         self.download()
         
     def download(self):
-        for year, month in self.year_month_tuples:
-            self.hook.download_month(
-                year,
-                month,
-                self.grib_dir_path
-            )
-        
+        for year, months in self.years_by_month_dict.items():
+            if len(months) < 4:
+                for month in months:
+                    self.hook.download_months(
+                        year,
+                        month,
+                        self.grib_dir_path
+                    )
+            else:
+                self.hook.download_year(
+                    year,
+                    self.grib_dir_path
+                )
+                
+                
             
 class DownloadEra5ForStationGaps(Era5Downloader):
         
