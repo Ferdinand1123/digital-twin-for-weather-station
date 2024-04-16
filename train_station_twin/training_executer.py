@@ -19,11 +19,13 @@ import tempfile
 import os
 import shutil
 
-import asyncio
 import pty
 
 import xarray as xr
 import re
+
+import numpy as np
+
 
 class TrainingExecuter():
 
@@ -53,56 +55,56 @@ class TrainingExecuter():
         self.expected_output_path = self.target_dir.name + '/' + \
             self.subfolder_name + '/' + self.expected_output_file_name
         self.train_args_path = self.target_dir.name + '/train_args.txt'
-        
-        self.progress = progress
-        self.total_iterations = 1000
 
-    async def execute(self):
-        
+        self.progress = progress
+        self.total_iterations = 100000
+
+    def execute(self):
+
         self.progress.update_phase("Downloading ERA5 data")
         self.get_era5_for_station()
         self.progress.update_phase("Preparing Training Set")
         self.transform_station_to_expected_output()
         self.copy_train_folder_as_val_folder()
         path = self.get_train_args_txt()
-        model_dir_path = await self.crai_train(path)
+        model_dir_path = self.crai_train(path)
         self.validate()
         return self.make_zip_folder(model_dir_path)
-    
+
     def validate(self):
         # to be used after execute
-        assert os.path.exists(self.get_path_of_final_model()), "Model not found after training"
+        assert os.path.exists(self.get_path_of_final_model()
+                              ), "Model not found after training"
         assert os.path.exists(self.era5_path)
-        
+
         evaluation = EvaluatuionExecuter(
             station=self.station,
             model_path=self.get_path_of_final_model()
         )
         # don't run evaluation.execute() because it will optain ERA5 to infill gaps
-        
+
         # copy the era5 training data to the evaluation directory
         shutil.copy(self.era5_path, evaluation.era5_path)
-        
+
         # prepare expected output cleaned
         reconstructed_path = evaluation.execute()
-        
+
         df = era5_vs_reconstructed_comparision_to_df(
             era5_path=self.era5_path,
             reconstructed_path=reconstructed_path,
             measurements_path=self.station_nc_file_path
         )
-        
+
         coords = {
             "station_lon": self.station.metadata.get("longitude"),
             "station_lat": self.station.metadata.get("latitude"),
             "era5_lons": xr.open_dataset(self.era5_path).lon.values,
             "era5_lats": xr.open_dataset(self.era5_path).lat.values
         }
-        
+
         pdf = FPDF(format='A3')
         pdf.add_page(orientation='L')
-        
-        
+
         saved_to_path = plot_n_steps_of_df(
             df,
             coords=coords,
@@ -110,27 +112,28 @@ class TrainingExecuter():
             title=f"{self.station.name}, Reconstructed vs Measurements",
             save_to=self.model_dir.name
         )
-        
+
         pdf.image(saved_to_path, h=260)
-        
+
         saved_to_path_2 = plot_n_steps_of_df(
             df,
             coords=coords,
             as_delta=False,
             title=f"{self.station.name}, Reconstructed",
             save_to=self.model_dir.name
-        )   
+        )
         pdf.image(saved_to_path_2, h=260)
-        
-        pdf.output(self.model_dir.name + '/validation.pdf')
 
+        pdf.output(self.get_pdf_path())
+
+    def get_pdf_path(self):
+        return self.model_dir.name + '/validation.pdf'
 
     def get_era5_for_station(self):
         era5_hook = Era5DownloadHook(lat=self.station.metadata.get("latitude"),
                                      lon=self.station.metadata.get("longitude"))
 
         temp_grib_dir = tempfile.TemporaryDirectory()
-
 
         DownloadEra5ForStation(
             station=self.station,
@@ -146,7 +149,6 @@ class TrainingExecuter():
         )
 
         temp_grib_dir.cleanup()
-    
 
         cropper = Era5ForStationCropper(
             station=self.station,
@@ -158,12 +160,20 @@ class TrainingExecuter():
         cropper.cleanup()
 
     def transform_station_to_expected_output(self):
-         
+
         station_nc = xr.open_dataset(self.station_nc_file_path)
         era5_nc = xr.open_dataset(self.era5_path)
 
         # assert the time axis is the same
-        assert all(station_nc.time.values == era5_nc.time.values)
+        try:
+            assert all(station_nc.time.values == era5_nc.time.values)
+        except Exception as e:
+            print("Time axis is not the same")
+            print("Station time axis:", station_nc.time.values)
+            print("ERA5 time axis:", era5_nc.time.values)
+            print("Difference:", set(station_nc.time.values) - set(era5_nc.time.values), "or",
+                    set(era5_nc.time.values) - set(station_nc.time.values))
+            raise e
 
         FillAllTasWithValuesInNcFile(
             values=station_nc.tas.values.flatten(),
@@ -185,7 +195,8 @@ class TrainingExecuter():
             --snapshot-dir {self.model_dir.name}
             --n-threads 0
             --max-iter {self.total_iterations}
-            --log-interval 5000
+            --log-interval {self.total_iterations // 20}
+            --eval-timesteps 0,1
             --loss-criterion 3
             --log-dir {self.log_dir.name}
             --normalize-data
@@ -199,46 +210,12 @@ class TrainingExecuter():
             f.write(train_args)
         return self.train_args_path
 
-    async def crai_train(self, train_args_path):
+    def crai_train(self, train_args_path):
         print("Active conda environment:", os.environ['CONDA_DEFAULT_ENV'])
         self.progress.update_phase("Training")
-        # start training but capture the output life from the train() output and obtain
-        # the loading process (tqdm is used in the train function) and save it to progress
-        
-        command = [
-            "python", "-m", "crai.climatereconstructionai.train",
-            "--load-from-file", train_args_path
-        ]
-        
-        master, slave = pty.openpty()
-        process = await asyncio.create_subprocess_exec(
-            *command,
-            stdout=slave,
-            stderr=slave
-        )
-        
-        while True:
-            try:
-                output = os.read(master, 1000)
-                if not output:
-                    break
-                output = output.decode()
-                # find all \d\d% in the output
-                # find the last one
-                # update the progress
-                percentages = re.findall(r'\s\d{1,2}%\s', output)
-                if percentages:
-                    last_percentage = int(percentages[-1].strip().strip('%'))
-                    self.progress.update_percentage(last_percentage)  
-                    if last_percentage > 97:
-                        break
-            except OSError:
-                print("Error reading from pty")
-                break
-            await asyncio.sleep(2)
-        
-        # wait for the process to finish
-        await process.wait()        
+        self.progress.folder_path = self.model_dir.name + '/images'
+        train(train_args_path)
+
         return self.model_dir.name
 
     def get_path_of_final_model(self):

@@ -1,6 +1,5 @@
 
 from flask import Flask, request, send_file
-from flask_socketio import SocketIO, emit
 from flask_sockets import Sockets
 
 import sys
@@ -8,7 +7,7 @@ import os
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from station.data_submission import DataSubmission, data_storage, ConnectedSocketResponsder
+from station.data_submission import DataSubmission, data_storage
 from station.station import StationData
 from infilling.evaluation_executer import EvaluatuionExecuter
 from infilling.infilling_writer import InfillingWriter
@@ -22,8 +21,6 @@ import tempfile
 import logging
 
 app = Flask(__name__)
-socketio = SocketIO(app)
-data_storage.connected_socket_responder = ConnectedSocketResponsder(socketio)
 
 # Configure Flask app to log to stdout
 app.logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -87,7 +84,8 @@ async def api_train_at_data_submission(uid):
     if not data_submission:
         return "Data submission not found", 404
     folder_path = data_submission.measurement_dir_path
-    progress_status = ProgressStatus(data_submission)
+    progress_status = ProgressStatus()
+    data_submission.progress = progress_status
     progress_status.update_phase("Extracting Station Data")
     station = StationData(
         name=data_submission.name,
@@ -97,8 +95,10 @@ async def api_train_at_data_submission(uid):
         station=station,
         progress=progress_status)
     
-    output_path = await training.execute()
+    output_path = training.execute()
+    progress_status.update_phase("")
     data_submission.add_model(training.get_path_of_final_model())
+    data_submission.add_pdf(training.get_pdf_path())
     
     response = send_file(output_path, as_attachment=True)
     
@@ -106,18 +106,21 @@ async def api_train_at_data_submission(uid):
     
     return response
 
-@socketio.on('connect')
-def handle_connect():
-    cookie = request.args.get('cookie')
-    # Handle the cookie as needed
-    # You can emit updates to the client as needed
-    emit('update', data_storage.get_all_available_datasets(cookie))
-    data_storage.connected_socket_responder.add_connection(request.sid, cookie)
-    
+
+@app.route('/api/available-datasets/<cookie>', methods=['GET'])
+def available_datasets(cookie):
+    return data_storage.get_all_available_datasets(cookie)
+
+
 @app.route('/api/delete-dataset/<uid>', methods=['DELETE'])
 def delete_dataset(uid):
     data_storage.delete_data_submission(uid)
     return "Dataset deleted"
+
+@app.route('/api/training-results-as-pdf/<uid>', methods=['GET'])
+def get_pdf(uid):
+    data_submission = data_storage.get_data_submission(uid)
+    return send_file(data_submission.pdf_path)
 
 # serve index.html and other frontend files
 @app.route('/web/<path:path>')
@@ -126,4 +129,4 @@ def send_frontend_files(path):
 
 
 if __name__ == '__main__':
-    socketio.run(app, port=3000)
+    app.run(app, port=3000)

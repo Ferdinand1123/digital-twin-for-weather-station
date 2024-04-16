@@ -189,10 +189,11 @@ class Era5ForStationCropper():
         xr_era5 = xr.open_dataset(self.era5_path)
         hours_to_drop = []
         for hour in missing_hours:
-            hours_to_drop.append(hour)
-            if len(hours_to_drop) > 1000:
-                xr_era5 = xr_era5.drop_sel(time=hours_to_drop)
-                hours_to_drop = []
+            if hour in xr_era5.time.values:
+                hours_to_drop.append(hour)
+                if len(hours_to_drop) > 1000:
+                    xr_era5 = xr_era5.drop_sel(time=hours_to_drop)
+                    hours_to_drop = []
         xr_era5 = xr_era5.drop_sel(time=hours_to_drop)
         saves_to = self.temp_dir.name + "/dropped_missing_hours.nc"
         xr_era5.to_netcdf(saves_to)

@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
 from station.data_submission import DataSubmission, data_storage
-
+import os
 
 class FillAllTasWithValuesInNcFile():
     def __init__(self, values, original_path, save_to_path):
@@ -38,30 +38,38 @@ class FillAllTasWithValuesInNcFile():
 
 class ProgressStatus():
 
-    def __init__(self, data_submission: DataSubmission):
-        self.ds_submission = data_submission
+    def __init__(self):
         self.phase = ""
-        self.percentage = False
+        self.percentage = ""
+        self.folder_path = ""
 
     def update_phase(self, phase):
         if self.phase != phase:
             self.phase = phase
-            self.percentage = False
-            self.ds_submission.update_progress_status(str(self))
+            self.percentage = ""
+            self.folder_path = ""
         return
 
     def update_percentage(self, percent):
         if self.percentage != percent:
             self.percentage = percent
-            self.ds_submission.update_progress_status(str(self))
         return
 
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
-        return f"{self.phase}" + (f" - {self.percentage} %" if self.percentage else "...")
-
+        if self.folder_path:
+            if not os.path.exists(self.folder_path):
+                self.percentage = 0
+            else:
+                self.percentage = len(os.listdir(self.folder_path)) * 5
+        if self.phase == "":
+            return ""
+        elif self.percentage == "":
+            return f"{self.phase}..."
+        else:
+            return f"{self.phase}... {self.percentage}%"
 
 def plot_n_steps_of_area_from_nc_file(path, n=1, vars="tas", title="", vmin=None, vmax=None):
 

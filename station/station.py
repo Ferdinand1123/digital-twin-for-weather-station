@@ -33,6 +33,7 @@ class StationData:
             if period.year not in month_dict:
                 month_dict[period.year] = []
             month_dict[period.year].append(period.month)
+        print("##### month dict", month_dict)
         return month_dict
     
     def export_as_nc(self, target_directory) -> None:

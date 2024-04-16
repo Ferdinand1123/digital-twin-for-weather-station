@@ -13,9 +13,10 @@ class DataSubmission:
         self.measurement_dir_path = self.measurement_dir.name
         self.model_dir = tempfile.TemporaryDirectory()
         self.model_path = None
+        self.pdf_path = None
         self.name = name
         self.cookie = cookie
-        self.status = ""
+        self.progress = None
 
     def submit(self, files, model):
         # Submit data to the server
@@ -66,9 +67,9 @@ class DataSubmission:
         self.generate_name()
         return
     
-    def update_progress_status(self, status):
-        self.status = status
-        data_storage.connected_socket_responder.emit(self.cookie)
+    def add_pdf(self, pdf_source_path):
+        self.pdf_path = self.model_dir.name + "/training.pdf"
+        shutil.copy(pdf_source_path, self.pdf_path)
         return
     
         
@@ -82,13 +83,11 @@ class DataSubmission:
 
 class DataStorage:
     def __init__(self):
-        self.connected_socket_responder = None
         self._data_submissions = {}
         
     def add_data_submission(self, data_submission: DataSubmission) -> str:
         uid = str(uuid.uuid4())
         self._data_submissions[uid] = data_submission
-        self.connected_socket_responder.emit(data_submission.cookie)
         return uid
         
     def get_data_submission(self, uid) -> DataSubmission:
@@ -100,7 +99,8 @@ class DataStorage:
             "name": data.name,
             "uid": uid,
             "has_model": data.model_path is not None,
-            "status": str(data.status)
+            "has_pdf": data.pdf_path is not None,
+            "status": str(data.progress if data.progress else "")
         } for uid, data in self._data_submissions.items() if data.cookie == cookie]
         return return_list
     
@@ -109,30 +109,9 @@ class DataStorage:
         if data_submission:
             data_submission.cleanup()
             del self._data_submissions[uid]
-        self.connected_socket_responder.emit(data_submission.cookie)
         return
     
-        
 
-class ConnectedSocketResponsder():
-    
-    def __init__(self, socketio):
-        self._conns = {}
-        self.socketio = socketio
-        
-        
-    def add_connection(self, conn, cookie):
-        if not cookie in self._conns.keys():
-            self._conns[cookie] = []
-        if not conn in self._conns[cookie]:
-            self._conns[cookie].append(conn)
-        
-    def emit(self, cookie):
-        for conn in self._conns[cookie]:
-            available_datasets = data_storage.get_all_available_datasets(cookie)
-            print("Emitting to:", conn, "datasets:", available_datasets)
-            self.socketio.emit('update', available_datasets, room=conn)
-        return
                 
             
 data_storage = DataStorage()

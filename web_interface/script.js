@@ -3,7 +3,10 @@ window.onload = function(){
     if (!document.cookie) {
         document.cookie = `uid=${Math.random().toString(36).substring(2)}; expires=${new Date(Date.now() + 31536000000).toUTCString()}`;
     }
-    list_available_datasets();
+
+    
+    
+    setInterval(request_available_datasets, 4000);
 }
 
 function submitForm() {
@@ -34,7 +37,7 @@ function submitForm() {
     formData.append('model', modelFile);
 
     // append cookie to form data
-    const cookie = document.cookie.split('; ').find(row => row.startsWith('uid')).split('=')[1];
+    cookie = document.cookie.split('; ').find(row => row.startsWith('uid')).split('=')[1];
     formData.append('cookie', cookie);
 
     fetch('/api/data-submission', {
@@ -45,42 +48,12 @@ function submitForm() {
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
+        request_available_datasets();
     })
     .catch(error => console.error('Error:', error));
 }
 
-// new function to list available datasets using a websocket and cookie
 
-const cookie = document.cookie.split('; ').find(row => row.startsWith('uid')).split('=')[1];
-// findout domain and port of the current page
-const domain = window.location.hostname;
-const port = window.location.port;
-let baseUrl = '' 
-if (window.location.protocol == 'https:') {
-    baseUrl += 'wss://';
-} else {
-    baseUrl += 'ws://';
-}
-baseUrl += domain
-if (port) {
-    baseUrl += ':' + port;
-}
-const socket = new io(baseUrl, { query: { cookie: cookie } });
-
-// Handle WebSocket events
-socket.on('connect', () => {
-    console.log('WebSocket connected');
-})
-
-socket.on('disconnect', () => {
-    console.log('WebSocket disconnected');
-    list_available_datasets();
-})
-
-socket.on('update', data => {
-    list_available_datasets(data);
-})
-    
 function list_available_datasets(data) {
     console.log("Received data: ", data);
     const datasetList = document.getElementById('dataset-list');
@@ -96,6 +69,9 @@ function list_available_datasets(data) {
                 if (dataset.has_model) {                
                     ctaArea.appendChild(get_fill_in_button(dataset.uid));
                 }
+                if (dataset.has_pdf) {
+                    ctaArea.appendChild(get_pdf_button(dataset.uid));
+                }
                 ctaArea.appendChild(get_train_button(dataset.uid));
                 ctaArea.appendChild(get_delete_button(dataset.uid));
             } else {
@@ -107,6 +83,25 @@ function list_available_datasets(data) {
     }
 }
 
+function request_available_datasets() {
+    // if tab is not active, do not request data
+    if (document.hidden) {
+        return;
+    }
+    const cookie = document.cookie.split('; ').find(row => row.startsWith('uid')).split('=')[1];
+ 
+    fetch('/api/available-datasets/' + cookie)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => list_available_datasets(data))
+    .catch(error => {
+        console.error('Error:', error)
+    });
+}
 
 function request_fill_in_for_dataset(uid) {
     fetch(`/api/fill-in/${uid}`)
@@ -162,6 +157,30 @@ function request_delete_for_dataset(uid) {
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
+        request_available_datasets();
+    })
+    .catch(error => {
+        console.error('Error:', error)
+    });
+}
+
+function request_pdf_for_dataset(uid) {
+    fetch(`/api/training-results-as-pdf/${uid}`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const filename = response.headers.get('content-disposition').split('filename=')[1];
+        return response.blob().then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        });
     })
     .catch(error => {
         console.error('Error:', error)
@@ -188,4 +207,11 @@ function get_delete_button(uid) {
     deleteButton.textContent = 'Delete';
     deleteButton.onclick = () => request_delete_for_dataset(uid);
     return deleteButton;
+}
+
+function get_pdf_button(uid) {
+    const pdfButton = document.createElement('button');
+    pdfButton.textContent = 'Training results'
+    pdfButton.onclick = () => request_pdf_for_dataset(uid);
+    return pdfButton;
 }
