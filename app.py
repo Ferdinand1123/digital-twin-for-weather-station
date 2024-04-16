@@ -1,6 +1,5 @@
 
 from flask import Flask, request, send_file
-from flask_sockets import Sockets
 
 import sys
 import os
