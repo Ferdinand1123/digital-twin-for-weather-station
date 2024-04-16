@@ -29,14 +29,14 @@ class Era5DownloadHook:
             "hours": hours
         }, target_folder + f"/{year}_{month}_{day}.grib")
         
-    def download_month(self, year, month, target_folder):
-        print(f"Downloading {year}-{month}")
+    def download_months(self, year, months:list, target_folder):
+        print(f"Downloading {year}-{months}")
         self._download({
             "years": [year],
-            "months": [month],
+            "months": months,
             "days": range(1, 32),
             "hours": range(0, 24)
-        }, target_folder + f"/{year}_{month}.grib")
+        }, target_folder + f"/{year}_{min(months)}-{max(months)}.grib")
         
     def download_year(self, year, target_folder):
         print(f"Downloading {year}")

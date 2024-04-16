@@ -1,4 +1,7 @@
 Flask==3.0.2
+asgiref==3.8.1
+Flask-SocketIO==5.3.6
+flask_sockets==0.2.1
 pandas==2.2.1
 python-dotenv==1.0.1
 cdsapi==0.6.1

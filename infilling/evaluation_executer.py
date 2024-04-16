@@ -36,9 +36,11 @@ class EvaluatuionExecuter:
         self.output_dir = tempfile.TemporaryDirectory()
         self.log_dir = tempfile.TemporaryDirectory()
         
+    def extract():
+        self.get_era5_for_station()
 
     def execute(self):
-        self.get_era5_for_station()
+        self.create_cleaned_nc_file()
         path = self.get_eval_args_txt()
         return self.crai_evaluate(path)     
 
@@ -66,8 +68,9 @@ class EvaluatuionExecuter:
             era5_target_file_path=self.era5_path
         )
         
-        temp_grib_dir.cleanup()          
-            
+        temp_grib_dir.cleanup()
+                  
+    def create_cleaned_nc_file(self):   
         FillAllTasWithValuesInNcFile(
             values=np.nan,
             original_path=self.era5_path,

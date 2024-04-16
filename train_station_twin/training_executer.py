@@ -5,22 +5,29 @@ from era5.era5_from_grib_to_nc import Era5DataFromGribToNc
 
 from infilling.evaluation_executer import EvaluatuionExecuter
 
-from utils.utils import FillAllTasWithValuesInNcFile
-from train_station_twin.training_analysis import era_vs_reconstructed_comparision_to_df, plot_n_steps_of_df
+from utils.utils import FillAllTasWithValuesInNcFile, ProgressStatus
+
+# import fpdf
+from fpdf import FPDF
+
+from train_station_twin.training_analysis import era5_vs_reconstructed_comparision_to_df, plot_n_steps_of_df
+from crai.climatereconstructionai import train
 
 import subprocess
-# from crai.climatereconstructionai import train
 
 import tempfile
 import os
 import shutil
 
-import xarray as xr
+import asyncio
+import pty
 
+import xarray as xr
+import re
 
 class TrainingExecuter():
 
-    def __init__(self, station: StationData):
+    def __init__(self, station: StationData, progress: ProgressStatus):
         self.station = station
         assert station.name is not None
         assert station.metadata is not None
@@ -46,18 +53,25 @@ class TrainingExecuter():
         self.expected_output_path = self.target_dir.name + '/' + \
             self.subfolder_name + '/' + self.expected_output_file_name
         self.train_args_path = self.target_dir.name + '/train_args.txt'
+        
+        self.progress = progress
+        self.total_iterations = 1000
 
-    def execute(self):
+    async def execute(self):
+        
+        self.progress.update_phase("Downloading ERA5 data")
         self.get_era5_for_station()
+        self.progress.update_phase("Preparing Training Set")
         self.transform_station_to_expected_output()
         self.copy_train_folder_as_val_folder()
         path = self.get_train_args_txt()
-        model_dir_path = self.crai_train(path)
+        model_dir_path = await self.crai_train(path)
+        self.validate()
         return self.make_zip_folder(model_dir_path)
     
-    def visualize(self):
+    def validate(self):
         # to be used after execute
-        assert os.path.exists(self.get_path_of_final_model())
+        assert os.path.exists(self.get_path_of_final_model()), "Model not found after training"
         assert os.path.exists(self.era5_path)
         
         evaluation = EvaluatuionExecuter(
@@ -68,16 +82,47 @@ class TrainingExecuter():
         
         # copy the era5 training data to the evaluation directory
         shutil.copy(self.era5_path, evaluation.era5_path)
-        path = evaluation.get_eval_args_txt()
-        reconstructed_path = evaluation.crai_evaluate(path)
         
-        df = era_vs_reconstructed_comparision_to_df(
-            era5_data = xr.open_dataset(self.era5_path),
-            reconstructed_data = xr.open_dataset(reconstructed_path),
-            measurements_data=xr.open_dataset(self.station_nc_file_path)
+        # prepare expected output cleaned
+        reconstructed_path = evaluation.execute()
+        
+        df = era5_vs_reconstructed_comparision_to_df(
+            era5_path=self.era5_path,
+            reconstructed_path=reconstructed_path,
+            measurements_path=self.station_nc_file_path
         )
         
-        plot_n_steps_of_df(df)   
+        coords = {
+            "station_lon": self.station.metadata.get("longitude"),
+            "station_lat": self.station.metadata.get("latitude"),
+            "era5_lons": xr.open_dataset(self.era5_path).lon.values,
+            "era5_lats": xr.open_dataset(self.era5_path).lat.values
+        }
+        
+        pdf = FPDF(format='A3')
+        pdf.add_page(orientation='L')
+        
+        
+        saved_to_path = plot_n_steps_of_df(
+            df,
+            coords=coords,
+            as_delta=True,
+            title=f"{self.station.name}, Reconstructed vs Measurements",
+            save_to=self.model_dir.name
+        )
+        
+        pdf.image(saved_to_path, h=260)
+        
+        saved_to_path_2 = plot_n_steps_of_df(
+            df,
+            coords=coords,
+            as_delta=False,
+            title=f"{self.station.name}, Reconstructed",
+            save_to=self.model_dir.name
+        )   
+        pdf.image(saved_to_path_2, h=260)
+        
+        pdf.output(self.model_dir.name + '/validation.pdf')
 
 
     def get_era5_for_station(self):
@@ -85,6 +130,7 @@ class TrainingExecuter():
                                      lon=self.station.metadata.get("longitude"))
 
         temp_grib_dir = tempfile.TemporaryDirectory()
+
 
         DownloadEra5ForStation(
             station=self.station,
@@ -100,6 +146,7 @@ class TrainingExecuter():
         )
 
         temp_grib_dir.cleanup()
+    
 
         cropper = Era5ForStationCropper(
             station=self.station,
@@ -111,6 +158,7 @@ class TrainingExecuter():
         cropper.cleanup()
 
     def transform_station_to_expected_output(self):
+         
         station_nc = xr.open_dataset(self.station_nc_file_path)
         era5_nc = xr.open_dataset(self.era5_path)
 
@@ -136,7 +184,7 @@ class TrainingExecuter():
             --out-channels 1
             --snapshot-dir {self.model_dir.name}
             --n-threads 0
-            --max-iter 1000
+            --max-iter {self.total_iterations}
             --log-interval 5000
             --loss-criterion 3
             --log-dir {self.log_dir.name}
@@ -151,24 +199,46 @@ class TrainingExecuter():
             f.write(train_args)
         return self.train_args_path
 
-    def crai_train(self, train_args_path):
+    async def crai_train(self, train_args_path):
         print("Active conda environment:", os.environ['CONDA_DEFAULT_ENV'])
-        # give the crai worker pid full access to all passed directories
-        for dir in [self.target_dir, self.model_dir, self.log_dir]:
-            print(f"chmod -R 777 {dir.name}")
-            subprocess.run(f"chmod -R 777 {dir.name}", shell=True)
+        self.progress.update_phase("Training")
+        # start training but capture the output life from the train() output and obtain
+        # the loading process (tqdm is used in the train function) and save it to progress
+        
         command = [
             "python", "-m", "crai.climatereconstructionai.train",
             "--load-from-file", train_args_path
         ]
-        try:
-            result = subprocess.run(command, check=True, capture_output=True, text=True)                                    
-            print(result.stdout)
-        except subprocess.CalledProcessError as e:
-            print("Error during training:", e)
-            print("Check the log files in", self.log_dir.name)
-            print(e.stderr)
-            raise e
+        
+        master, slave = pty.openpty()
+        process = await asyncio.create_subprocess_exec(
+            *command,
+            stdout=slave,
+            stderr=slave
+        )
+        
+        while True:
+            try:
+                output = os.read(master, 1000)
+                if not output:
+                    break
+                output = output.decode()
+                # find all \d\d% in the output
+                # find the last one
+                # update the progress
+                percentages = re.findall(r'\s\d{1,2}%\s', output)
+                if percentages:
+                    last_percentage = int(percentages[-1].strip().strip('%'))
+                    self.progress.update_percentage(last_percentage)  
+                    if last_percentage > 97:
+                        break
+            except OSError:
+                print("Error reading from pty")
+                break
+            await asyncio.sleep(2)
+        
+        # wait for the process to finish
+        await process.wait()        
         return self.model_dir.name
 
     def get_path_of_final_model(self):

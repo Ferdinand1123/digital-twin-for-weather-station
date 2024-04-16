@@ -3,6 +3,8 @@ from station.dat_to_nc_converter import DatToNcConverter
 from era5.era5_download_hook import Era5DownloadHook
 from era5.era5_from_grib_to_nc import Era5DataFromGribToNc
 
+import utils.utils as utils
+
 import tempfile
 import os
 import xarray as xr
@@ -28,13 +30,12 @@ class DownloadEra5ForStation(Era5Downloader):
         
     def download(self):
         for year, months in self.years_by_month_dict.items():
-            if len(months) < 4:
-                for month in months:
-                    self.hook.download_months(
-                        year,
-                        month,
-                        self.grib_dir_path
-                    )
+            if len(months) < 10:
+                self.hook.download_months(
+                    year,
+                    months,
+                    self.grib_dir_path
+                )
             else:
                 self.hook.download_year(
                     year,
@@ -97,9 +98,10 @@ class Era5ForStationCropper():
         print("Lon: ", station_lon)
         
         
-        nearest_lat_idx = np.searchsorted(list(reversed(xr_era5.lat.values)), station_lat)
-        nearest_lat_idx = len(xr_era5.lat.values) - nearest_lat_idx
-        nearest_lon_idx = np.searchsorted(xr_era5.lon.values, station_lon)    
+        nearest_lon_idx, nearest_lat_idx = utils.find_nearest_lon_lat(
+            xr_era5.lon.values, xr_era5.lat.values,
+            station_lon, station_lat
+        ) 
 
         print("nearest_lat_idx:", nearest_lat_idx, xr_era5.lat.values)
         print("nearest_lon_idx:", nearest_lon_idx, xr_era5.lon.values)

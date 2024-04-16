@@ -1,5 +1,7 @@
 import numpy as np
 import xarray as xr
+from station.data_submission import DataSubmission, data_storage
+
 
 class FillAllTasWithValuesInNcFile():
     def __init__(self, values, original_path, save_to_path):
@@ -7,11 +9,11 @@ class FillAllTasWithValuesInNcFile():
             self.values = [values]
         else:
             self.values = values
-            
+
         self.original_path = original_path
         self.save_to_path = save_to_path
         self._create_filled_nc_files()
-        
+
     def _create_filled_nc_files(self):
         if len(self.values) == 1:
             value = self.values[0]
@@ -19,19 +21,48 @@ class FillAllTasWithValuesInNcFile():
                 ds['tas'].values[:] = value
                 ds.to_netcdf(self.save_to_path)
         else:
-            with xr.open_dataset(self.original_path) as ds:# Get the shape of the 'tas' variable
+            # Get the shape of the 'tas' variable
+            with xr.open_dataset(self.original_path) as ds:
                 tas_shape = ds['tas'].shape
-                
+
                 # Reshape self.values to match the shape of 'tas'
                 repeated_values = self.values[:, np.newaxis, np.newaxis] * np.ones(
                     (len(self.values), 8, 8))
-    
+
                 # Assign the repeated values to the 'tas' variable
                 ds['tas'].values[:, :, :] = repeated_values
                 ds.to_netcdf(self.save_to_path)
-        
+
         return self.save_to_path
- 
+
+
+class ProgressStatus():
+
+    def __init__(self, data_submission: DataSubmission):
+        self.ds_submission = data_submission
+        self.phase = ""
+        self.percentage = False
+
+    def update_phase(self, phase):
+        if self.phase != phase:
+            self.phase = phase
+            self.percentage = False
+            self.ds_submission.update_progress_status(str(self))
+        return
+
+    def update_percentage(self, percent):
+        if self.percentage != percent:
+            self.percentage = percent
+            self.ds_submission.update_progress_status(str(self))
+        return
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return f"{self.phase}" + (f" - {self.percentage} %" if self.percentage else "...")
+
+
 def plot_n_steps_of_area_from_nc_file(path, n=1, vars="tas", title="", vmin=None, vmax=None):
 
     dataset = xr.open_dataset(path)
@@ -62,7 +93,8 @@ def plot_n_steps_of_area_from_nc_file(path, n=1, vars="tas", title="", vmin=None
             fig, ax = plt.subplots(
                 subplot_kw={'projection': ccrs.PlateCarree()})
             # Plot the temperature data with a quadratic colormap
-            _data = dataset.variables[var].values[time_index, lat_slice, lon_slice]
+            _data = dataset.variables[var].values[time_index,
+                                                  lat_slice, lon_slice]
             pcm = ax.pcolormesh(_lon, _lat, _data, cmap='viridis',
                                 shading='auto', vmin=vmin, vmax=vmax)
 
@@ -79,22 +111,23 @@ def plot_n_steps_of_area_from_nc_file(path, n=1, vars="tas", title="", vmin=None
 
             # position title a higher
             plt.subplots_adjust(top=1)
-            
+
             # Add subtitle
-            plt.figtext(0.125, 0.05, subtitle, wrap=True, horizontalalignment='left', fontsize=12)
+            plt.figtext(0.125, 0.05, subtitle, wrap=True,
+                        horizontalalignment='left', fontsize=12)
 
             # Show the plot
             plt.show()
 
-        
-        
+
 def pretty_lat(lat):
     lat = round(lat, 3)
     if lat > 0:
         return f"{abs(lat)}°N"
     else:
         return f"{abs(lat)}°S"
-    
+
+
 def pretty_lon(lon):
     lon = (lon + 180) % 360 - 180
     lon = round(lon, 3)
@@ -102,3 +135,11 @@ def pretty_lon(lon):
         return f"{abs(lon)}°E"
     else:
         return f"{abs(lon)}°W"
+
+
+def find_nearest_lon_lat(asc_lon_list, desc_lat_list, station_lon, station_lat):
+    lat_nearest_idx = np.searchsorted(
+        list(reversed(desc_lat_list)), station_lat)
+    lat_nearest_idx = len(desc_lat_list) - lat_nearest_idx
+    lon_nearest_idx = np.searchsorted(asc_lon_list, station_lon)
+    return lon_nearest_idx, lat_nearest_idx
