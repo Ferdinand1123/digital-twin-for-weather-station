@@ -94,7 +94,7 @@ async def api_train_at_data_submission(uid):
         station=station,
         progress=progress_status)
     
-    output_path = training.execute()
+    output_path = await training.execute()
     progress_status.update_phase("")
     data_submission.add_model(training.get_path_of_final_model())
     data_submission.add_pdf(training.get_pdf_path())

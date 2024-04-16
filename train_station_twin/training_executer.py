@@ -59,7 +59,7 @@ class TrainingExecuter():
         self.progress = progress
         self.total_iterations = 100000
 
-    def execute(self):
+    async def execute(self):
 
         self.progress.update_phase("Downloading ERA5 data")
         self.get_era5_for_station()
@@ -67,7 +67,7 @@ class TrainingExecuter():
         self.transform_station_to_expected_output()
         self.copy_train_folder_as_val_folder()
         path = self.get_train_args_txt()
-        model_dir_path = self.crai_train(path)
+        model_dir_path = await self.crai_train(path)
         self.validate()
         return self.make_zip_folder(model_dir_path)
 
@@ -210,11 +210,11 @@ class TrainingExecuter():
             f.write(train_args)
         return self.train_args_path
 
-    def crai_train(self, train_args_path):
+    async def crai_train(self, train_args_path):
         print("Active conda environment:", os.environ['CONDA_DEFAULT_ENV'])
         self.progress.update_phase("Training")
         self.progress.folder_path = self.model_dir.name + '/images'
-        train(train_args_path)
+        await train(train_args_path)
 
         return self.model_dir.name
 
