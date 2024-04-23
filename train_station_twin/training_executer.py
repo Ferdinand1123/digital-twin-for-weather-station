@@ -7,14 +7,14 @@ from infilling.evaluation_executer import EvaluatuionExecuter
 
 from utils.utils import FillAllTasWithValuesInNcFile, ProgressStatus
 
-# import fpdf
+
 from fpdf import FPDF
 
 from train_station_twin.training_analysis import era5_vs_reconstructed_comparision_to_df, plot_n_steps_of_df
 from crai.climatereconstructionai import train
 
 import subprocess
-
+import asyncio
 import tempfile
 import os
 import shutil
@@ -60,7 +60,6 @@ class TrainingExecuter():
         self.total_iterations = 100000
 
     async def execute(self):
-
         self.progress.update_phase("Downloading ERA5 data")
         self.get_era5_for_station()
         self.progress.update_phase("Preparing Training Set")
@@ -213,8 +212,26 @@ class TrainingExecuter():
     async def crai_train(self, train_args_path):
         print("Active conda environment:", os.environ['CONDA_DEFAULT_ENV'])
         self.progress.update_phase("Training")
-        self.progress.folder_path = self.model_dir.name + '/images'
-        await train(train_args_path)
+        command = [
+            "python", "-m", "crai.climatereconstructionai.train",
+            "--load-from-file", train_args_path
+        ]
+
+        try:
+            # Start the subprocess and capture its output to output.txt
+            with open('/output.txt', 'w') as output_file:
+                process = await asyncio.create_subprocess_exec(
+                    *command,
+                    stdout=output_file,
+                    stderr=output_file
+                )
+            
+            # Wait for the process to finish and get its return code
+            return_code = await process.wait()
+            
+
+        except subprocess.CalledProcessError as e:
+            raise Exception("Error during training")
 
         return self.model_dir.name
 

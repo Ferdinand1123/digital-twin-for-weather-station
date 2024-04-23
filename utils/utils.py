@@ -126,6 +126,7 @@ def plot_n_steps_of_area_from_nc_file(path, n=1, vars="tas", title="", vmin=None
 
             # Show the plot
             plt.show()
+    return time_index_list
 
 
 def pretty_lat(lat):

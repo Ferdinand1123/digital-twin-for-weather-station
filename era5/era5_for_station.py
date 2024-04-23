@@ -86,7 +86,7 @@ class Era5ForStationCropper():
         self.era5_path = self.crop_time_axis()
         self.era5_path = self.drop_along_time_axis()
         self.era5_path = self.crop_lat_lon_to_grid(do_export=True)
-        
+        print("Era5 for station cropped and exported to:", self.era5_target_path)
     
     def crop_lat_lon_to_grid(self, do_export=False, width=8, height=8):
         station_lat = self.station.metadata.get("latitude")
