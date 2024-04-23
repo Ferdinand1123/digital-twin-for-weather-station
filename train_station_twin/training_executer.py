@@ -209,17 +209,46 @@ class TrainingExecuter():
             f.write(train_args)
         return self.train_args_path
 
-    async def crai_train(self, train_args_path):
-        print("Active conda environment:", os.environ['CONDA_DEFAULT_ENV'])
-        self.progress.update_phase("Training")
+
+async def crai_train(self, train_args_path):
+    print("Active conda environment:", os.environ['CONDA_DEFAULT_ENV'])
+    self.progress.update_phase("Training")
+    self.progress.folder_path = self.model_dir.name + "/images"
+    command = [
+        "python", "-m", "crai.climatereconstructionai.train",
+        "--load-from-file", train_args_path
+    ]
+
+    try:
+        # Start the subprocess and capture its output to output.tx
+        process = await asyncio.create_subprocess_exec(
+            *command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        
+        # Read the output from stdout and stderr concurrently
+        while True:
+            stdout_data = await process.stdout.readline()
+            stderr_data = await process.stderr.readline()
+            
+            if stdout_data:
+                print(stdout_data.decode().strip())
+            if stderr_data:
+                print(stderr_data.decode().strip())
+            
+            # Check if the process has finished
+            if process.returncode is not None:
+                break
+        
+        # Wait for the process to finish and get its return code
+        return_code = await process.wait()
         
 
-        try:
-            train(train_args_path)
-        except subprocess.CalledProcessError as e:
-            raise Exception("Error during training")
+    except subprocess.CalledProcessError as e:
+        raise Exception("Error during training")
 
-        return self.model_dir.name
+    return self.model_dir.name
 
     def get_path_of_final_model(self):
         return self.model_dir.name + '/' + self.model_dir_subfolder_name + '/final.pth'
