@@ -100,8 +100,9 @@ class DataStorage:
             "uid": uid,
             "has_model": data.model_path is not None,
             "has_pdf": data.pdf_path is not None,
-            "status": str(data.progress if data.progress else "")
+            "status": data.progress.to_string() if data.progress else ""
         } for uid, data in self._data_submissions.items() if data.cookie == cookie]
+        print(return_list)
         return return_list
     
     def delete_data_submission(self, uid):

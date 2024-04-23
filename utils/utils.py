@@ -59,6 +59,9 @@ class ProgressStatus():
         return self.__str__()
 
     def __str__(self):
+        return self.to_string()
+    
+    def to_string(self):        
         print(f"checking if self.folder_path {self.folder_path} exists")
         if self.folder_path:
             print(f"exists: {os.path.exists(self.folder_path)}")
