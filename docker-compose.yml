@@ -13,7 +13,10 @@ services:
       - ./infilling:/app/infilling
       - ./train_station_twin:/app/train_station_twin
       - ./web_interface:/app/web_interface
-   
+    deploy:
+        resources:
+          limits:
+            memory: 12G
   nginx:
     image: nginx:1.19.6-alpine
     ports:
@@ -23,3 +26,4 @@ services:
     command: [nginx-debug, '-g', 'daemon off;']
     depends_on:
       - flask-app
+    network_mode: host
