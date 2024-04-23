@@ -20,6 +20,9 @@ function submitForm() {
             hasDatFile = true;
         } else if (file.name.endsWith('.rtf')) {
             hasRtfFile = true;
+        } else if (file.name.endsWith('.zip')) {
+            hasDatFile = true;
+            hasRtfFile = true;
         }
     }
 
@@ -188,6 +191,29 @@ function request_pdf_for_dataset(uid) {
 }
 
 
+function download_model_of_dataset(uid) {
+    fetch(`/api/download-model/${uid}`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const filename = response.headers.get('content-disposition').split('filename=')[1];
+        return response.blob().then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        });
+    })
+    .catch(error => {
+        console.error('Error:', error)
+    });
+}
+
 function get_fill_in_button(uid) {
     const fillInButton = document.createElement('button');
     fillInButton.textContent = 'Fill in';
@@ -213,5 +239,12 @@ function get_pdf_button(uid) {
     const pdfButton = document.createElement('button');
     pdfButton.textContent = 'Training results'
     pdfButton.onclick = () => request_pdf_for_dataset(uid);
+    return pdfButton;
+}
+
+function get_model_button(uid) {
+    const modelButton = document.createElement('button');
+    modelButton.textContent = 'Download model'
+    modelButton.onclick = () => download_model_of_dataset(uid);
     return pdfButton;
 }

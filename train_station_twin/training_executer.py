@@ -57,7 +57,7 @@ class TrainingExecuter():
         self.train_args_path = self.target_dir.name + '/train_args.txt'
 
         self.progress = progress
-        self.total_iterations = 100000
+        self.total_iterations = 20000
 
     async def execute(self):
         self.progress.update_phase("Downloading ERA5 data")

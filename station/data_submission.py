@@ -4,6 +4,7 @@ import shutil
 import os
 import json
 import time
+from zipfile import ZipFile
 
 
 class DataSubmission:
@@ -21,8 +22,26 @@ class DataSubmission:
     def submit(self, files, model):
         # Submit data to the server
         print("Number of uploaded files:", len(files))
+        print("savinf into:", self.measurement_dir_path)
         for file in files:
-            file.save(self.measurement_dir_path + "/" + file.filename)
+            if file.filename.endswith('.zip'):
+                # Handle ZIP files
+                 # Handle ZIP files
+                zip_path = os.path.join(self.measurement_dir_path, file.filename)
+                file.save(zip_path)  # Save the ZIP file
+
+                # Extract contents of the ZIP file
+                with ZipFile(zip_path, 'r') as zip_ref:
+                    zip_ref.extractall(self.measurement_dir_path)
+                
+                zip_folder = self.measurement_dir_path + "/" + file.filename.split(".zip")[0]
+
+                move_files(zip_folder, self.measurement_dir_path)
+                
+                # Remove the ZIP file after extraction
+                os.remove(zip_path)
+                shutil.rmtree(zip_folder)
+    
         if model:
             self.model_path = self.model_dir.name + "/" + model.filename
             model.save(self.model_path)
@@ -115,3 +134,14 @@ class DataStorage:
                 
             
 data_storage = DataStorage()
+
+
+def move_files(source_dir, destination_dir):
+    # Get list of files in the source directory
+    files = os.listdir(source_dir)
+    
+    # Move each file to the destination directory
+    for file in files:
+        source_path = os.path.join(source_dir, file)
+        destination_path = os.path.join(destination_dir, file)
+        shutil.move(source_path, destination_path)

@@ -121,6 +121,11 @@ def get_pdf(uid):
     data_submission = data_storage.get_data_submission(uid)
     return send_file(data_submission.pdf_path)
 
+@app.route('/api/download-model/<uid>', methods=['GET'])
+def send_model(uid):
+    data_submission = data_storage.get_data_submission(uid)
+    return send_file(data_submission.model_path)
+
 # serve index.html and other frontend files
 @app.route('/web/<path:path>')
 def send_frontend_files(path):
