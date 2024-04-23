@@ -212,24 +212,10 @@ class TrainingExecuter():
     async def crai_train(self, train_args_path):
         print("Active conda environment:", os.environ['CONDA_DEFAULT_ENV'])
         self.progress.update_phase("Training")
-        command = [
-            "python", "-m", "crai.climatereconstructionai.train",
-            "--load-from-file", train_args_path
-        ]
+        
 
         try:
-            # Start the subprocess and capture its output to output.txt
-            with open('/output.txt', 'w') as output_file:
-                process = await asyncio.create_subprocess_exec(
-                    *command,
-                    stdout=output_file,
-                    stderr=output_file
-                )
-            
-            # Wait for the process to finish and get its return code
-            return_code = await process.wait()
-            
-
+            train(train_args_path)
         except subprocess.CalledProcessError as e:
             raise Exception("Error during training")
 
