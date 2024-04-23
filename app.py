@@ -108,8 +108,9 @@ async def api_train_at_data_submission(uid):
 
 @app.route('/api/available-datasets/<cookie>', methods=['GET'])
 def available_datasets(cookie):
-    return data_storage.get_all_available_datasets(cookie)
-
+    sets = data_storage.get_all_available_datasets(cookie)
+    print(sets)
+    return sets
 
 @app.route('/api/delete-dataset/<uid>', methods=['DELETE'])
 def delete_dataset(uid):
