@@ -5,7 +5,7 @@ window.onload = function(){
     }
 
     
-    
+    request_available_datasets()
     setInterval(request_available_datasets, 4000);
 }
 
