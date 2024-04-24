@@ -71,6 +71,7 @@ function list_available_datasets(data) {
             if (dataset.status == "") {
                 if (dataset.has_model) {                
                     ctaArea.appendChild(get_fill_in_button(dataset.uid));
+                    ctaArea.appendChild(get_model_button(dataset.uid));
                 }
                 if (dataset.has_pdf) {
                     ctaArea.appendChild(get_pdf_button(dataset.uid));
