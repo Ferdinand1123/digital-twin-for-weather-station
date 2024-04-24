@@ -1,6 +1,5 @@
 import numpy as np
 import xarray as xr
-from station.data_submission import DataSubmission, data_storage
 import os
 
 class FillAllTasWithValuesInNcFile():
@@ -63,7 +62,7 @@ class ProgressStatus():
             if not os.path.exists(self.folder_path):
                 self.percentage = 0
             else:
-                self.percentage = len(os.listdir(self.folder_path)) * 5
+                self.percentage = min(100, len(os.listdir(self.folder_path)) * 5)
         if self.phase == "":
             return ""
         elif self.percentage == "":

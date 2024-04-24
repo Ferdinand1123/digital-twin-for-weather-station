@@ -29,7 +29,7 @@ import numpy as np
 
 class TrainingExecuter():
 
-    def __init__(self, station: StationData, progress: ProgressStatus):
+    def __init__(self, station: StationData, progress: ProgressStatus, iterations):
         self.station = station
         assert station.name is not None
         assert station.metadata is not None
@@ -57,7 +57,7 @@ class TrainingExecuter():
         self.train_args_path = self.target_dir.name + '/train_args.txt'
 
         self.progress = progress
-        self.total_iterations = 20000
+        self.total_iterations = iterations
 
     async def execute(self):
         self.progress.update_phase("Downloading ERA5 data")
@@ -68,6 +68,7 @@ class TrainingExecuter():
         path = self.get_train_args_txt()
         model_dir_path = await self.crai_train(path)
         self.validate()
+        self.progress.update_phase("")
         return self.make_zip_folder(model_dir_path)
 
     def validate(self):

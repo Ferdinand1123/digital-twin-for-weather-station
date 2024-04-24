@@ -78,6 +78,10 @@ button {
     cursor: pointer;
 }
 
+button:disabled {
+    opacity: 0.6; /* Adjust the opacity value as desired */
+}
+
 
 #dataset-list>li {
     list-style: none;

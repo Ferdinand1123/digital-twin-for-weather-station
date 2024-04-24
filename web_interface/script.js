@@ -10,6 +10,12 @@ window.onload = function(){
 }
 
 function submitForm() {
+    // Disable the submit button
+    const submitButton = document.getElementById('submit_btn');
+    submit_button_text_before = submitButton.textContent
+    submitButton.disabled = true;
+    submitButton.textContent = 'Uploading...';
+
     const measurementFiles = document.getElementById('measurement').files;
     let hasDatFile = false;
     let hasRtfFile = false;
@@ -51,6 +57,8 @@ function submitForm() {
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
+        submitButton.textContent = submit_button_text_before;
+        submitButton.disabled = false;
         request_available_datasets();
     })
     .catch(error => console.error('Error:', error));
@@ -130,8 +138,8 @@ function request_fill_in_for_dataset(uid) {
     });
 }
 
-function request_train_for_dataset(uid) {
-    fetch(`/api/train/${uid}`)
+function request_train_for_dataset(uid, iterations) {
+    fetch(`/api/train/${uid}?iterations=${iterations}`)
     .then(response => {
         if (!response.ok) {
             throw new Error('Network response was not ok');
@@ -225,7 +233,17 @@ function get_fill_in_button(uid) {
 function get_train_button(uid) {
     const trainButton = document.createElement('button');
     trainButton.textContent = 'Train';
-    trainButton.onclick = () => request_train_for_dataset(uid);
+    trainButton.onclick = () => {
+        const iterations = prompt("Enter the count of iterations:");
+        if (iterations !== null && iterations.trim() !== "") {
+            const parsedIterations = parseInt(iterations, 10);
+            if (!isNaN(parsedIterations) && Number.isInteger(parsedIterations)) {
+                request_train_for_dataset(uid, parsedIterations);
+            } else {
+                alert("Please enter a valid integer for iterations.");
+            }
+        }
+    };
     return trainButton;
 }
 

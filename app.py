@@ -46,16 +46,13 @@ def data_submission_api_point():
 @app.route('/api/fill-in/<uid>', methods=['GET'])
 def api_fill_in_at_data_submission(uid):
     data_submission = data_storage.get_data_submission(uid)
-    folder_path = data_submission.measurement_dir_path
-    model_path = data_submission.model_path
+    if not data_submission:
+        return "Data submission not found", 404
     
-    station = StationData(
-        name=data_submission.name,
-        folder_path=folder_path)
     
     evaluation = EvaluatuionExecuter(
-        station=station,
-        model_path=model_path)
+        station=data_submission.station,
+        model_path=data_submission.model_path)
     
     evaluation.extract()
     results_path = evaluation.execute()    
@@ -64,7 +61,7 @@ def api_fill_in_at_data_submission(uid):
     
     output_path, plot_path = infilling.write_results(
         eval_results_path=results_path,
-        station=station,
+        station=data_submission.station,
         plot=True
     ) 
     
@@ -79,23 +76,23 @@ def api_fill_in_at_data_submission(uid):
 
 @app.route('/api/train/<uid>', methods=['GET'])
 async def api_train_at_data_submission(uid):
+    iterations = request.args.get('iterations')
     data_submission = data_storage.get_data_submission(uid)
     if not data_submission:
         return "Data submission not found", 404
-    folder_path = data_submission.measurement_dir_path
-    progress_status = ProgressStatus()
-    data_submission.progress = progress_status
-    progress_status.update_phase("Extracting Station Data")
-    station = StationData(
-        name=data_submission.name,
-        folder_path=folder_path)
-    progress_status.update_phase("Downloading ERA5 data")
+    if not iterations:
+        return "Iterations count missing", 400
+    try:
+        iterations = int(iterations)
+    except ValueError:
+        return "Iterations count must be an integer", 400
     training = TrainingExecuter(
-        station=station,
-        progress=progress_status)
+        station=data_submission.station,
+        progress=data_submission.progress,
+        iterations=iterations
+    )
     
     output_path = await training.execute()
-    progress_status.update_phase("")
     data_submission.add_model(training.get_path_of_final_model())
     data_submission.add_pdf(training.get_pdf_path())
     

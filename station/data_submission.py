@@ -6,18 +6,34 @@ import json
 import time
 from zipfile import ZipFile
 
+from utils.utils import ProgressStatus
+from station.station import StationData
+
+import threading
 
 class DataSubmission:
     def __init__(self, name="", cookie=False):
         self.data = None
         self.measurement_dir = tempfile.TemporaryDirectory()
-        self.measurement_dir_path = self.measurement_dir.name
+        self.measurement_dir_path = self.measurement_dir.name # such that someone can create a DataSubmission without submit function and instead by adding the folder manually
         self.model_dir = tempfile.TemporaryDirectory()
         self.model_path = None
         self.pdf_path = None
         self.name = name
         self.cookie = cookie
-        self.progress = None
+        self.progress = ProgressStatus()
+        self.station = None
+        
+    def initialize_station(self):
+        self.progress.update_phase("Extracting Station")
+        # Create StationData instance
+        self.station = StationData(
+            name=self.name,
+            folder_path=self.measurement_dir_path
+        )
+
+        # Update progress phase
+        self.progress.update_phase("")
 
     def submit(self, files, model):
         # Submit data to the server
@@ -47,6 +63,8 @@ class DataSubmission:
             model.save(self.model_path)
         if not self.name:
             self.generate_name()
+        # Start a new thread to initialize station data
+        threading.Thread(target=self.initialize_station, daemon=True).start()
         return
     
     def generate_name(self):
