@@ -247,5 +247,5 @@ function get_model_button(uid) {
     const modelButton = document.createElement('button');
     modelButton.textContent = 'Download model'
     modelButton.onclick = () => download_model_of_dataset(uid);
-    return pdfButton;
+    return modelButton
 }
