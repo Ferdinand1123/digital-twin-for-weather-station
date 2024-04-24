@@ -38,7 +38,6 @@ class DataSubmission:
     def submit(self, files, model):
         # Submit data to the server
         print("Number of uploaded files:", len(files))
-        print("savinf into:", self.measurement_dir_path)
         for file in files:
             if file.filename.endswith('.zip'):
                 # Handle ZIP files
