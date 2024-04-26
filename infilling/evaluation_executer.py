@@ -36,7 +36,7 @@ class EvaluatuionExecuter:
         self.output_dir = tempfile.TemporaryDirectory()
         self.log_dir = tempfile.TemporaryDirectory()
         
-    def extract():
+    def extract(self):
         self.get_era5_for_station()
 
     def execute(self):
