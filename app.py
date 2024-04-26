@@ -118,11 +118,19 @@ def delete_dataset(uid):
 @app.route('/api/training-results-as-pdf/<uid>', methods=['GET'])
 def get_pdf(uid):
     data_submission = data_storage.get_data_submission(uid)
+    if not data_submission:
+        return "Data submission not found", 404
+    if not data_submission.pdf_path:
+        return "PDF missing", 404
     return send_file(data_submission.pdf_path)
 
 @app.route('/api/download-model/<uid>', methods=['GET'])
 def send_model(uid):
     data_submission = data_storage.get_data_submission(uid)
+    if not data_submission:
+        return "Data submission not found", 404
+    if not data_submission.model_path:
+        return "Model missing", 404
     return send_file(data_submission.model_path)
 
 # serve index.html and other frontend files
