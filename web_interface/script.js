@@ -65,7 +65,11 @@ function submitForm() {
         submitButton.disabled = false;
         request_available_datasets();
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => {
+        console.error('Error:', error)
+        submitButton.textContent = submit_button_text_before;
+        submitButton.disabled = false;   
+    });
 }
 
 
