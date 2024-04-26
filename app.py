@@ -49,6 +49,8 @@ def api_fill_in_at_data_submission(uid):
     if not data_submission:
         return "Data submission not found", 404
     
+    if not data_submission.model_path:
+        return "Model missing", 404
     
     evaluation = EvaluatuionExecuter(
         station=data_submission.station,
