@@ -56,6 +56,10 @@ class DataSubmission:
                 # Remove the ZIP file after extraction
                 os.remove(zip_path)
                 shutil.rmtree(zip_folder)
+            else:
+                # Handle other files
+                file_path = os.path.join(self.measurement_dir_path, file.filename)
+                file.save(file_path)
     
         if model:
             self.model_path = self.model_dir.name + "/" + model.filename
