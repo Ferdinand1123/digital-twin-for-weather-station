@@ -1,13 +1,18 @@
 window.onload = function(){
-    // set random unique id as cookie with expiration date in 1 year
-    if (!document.cookie) {
-        document.cookie = `uid=${Math.random().toString(36).substring(2)}; expires=${new Date(Date.now() + 31536000000).toUTCString()}`;
-    }
-
     
     request_available_datasets()
     setInterval(request_available_datasets, 4000);
 }
+
+function getUidFromCookie() {
+        // set random unique id as cookie with expiration date in 1 year
+        if (!document.cookie) {
+            if (document.cookie.split('; ').find(row => row.startsWith("uid")) === undefined) {
+                document.cookie = `uid=${Math.random().toString(36).substring(2)}; expires=${new Date(Date.now() + 31536000000).toUTCString()}`;
+            }
+        }   
+        return document.cookie.split('; ').find(row => row.startsWith(name)).split('=')[1];
+    }
 
 function submitForm() {
     // Disable the submit button
@@ -46,8 +51,7 @@ function submitForm() {
     formData.append('model', modelFile);
 
     // append cookie to form data
-    cookie = document.cookie.split('; ').find(row => row.startsWith('uid')).split('=')[1];
-    formData.append('cookie', cookie);
+    formData.append('cookie', getUidFromCookie());
 
     fetch('/api/data-submission', {
         method: 'POST',
@@ -100,7 +104,7 @@ function request_available_datasets() {
     if (document.hidden) {
         return;
     }
-    const cookie = document.cookie.split('; ').find(row => row.startsWith('uid')).split('=')[1];
+    const cookie = getUidFromCookie();
  
     fetch('/api/available-datasets/' + cookie)
     .then(response => {
