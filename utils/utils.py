@@ -151,3 +151,9 @@ def find_nearest_lon_lat(asc_lon_list, desc_lat_list, station_lon, station_lat):
     lat_nearest_idx = len(desc_lat_list) - lat_nearest_idx
     lon_nearest_idx = np.searchsorted(asc_lon_list, station_lon)
     return lon_nearest_idx, lat_nearest_idx
+
+def plot_measurements_df(df):
+    fig, ax = plt.subplots(1, 1)
+    ax.plot(df.index, df.tas, label="tas")
+    ax.legend()
+    plt.show()

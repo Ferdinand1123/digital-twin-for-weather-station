@@ -21,12 +21,13 @@ from datetime import datetime
 import pandas as pd
 import tqdm
 import re
+import concurrent.futures
 
 from station.map_minutes_to_grid import mapping_rule
 
 class DatToNcConverter:
 
-    def __init__(self, name, directory = None, target_directory = None, hourly = False,
+    def __init__(self, name, directory = None, target_directory = None, hourly = True,
                  grid_blueprint = None, keep_original = False):
         self.name = name
         self.directory = directory if directory is not None else os.getcwd() + "/station_data_as_dat/" + self.name.capitalize()
@@ -62,11 +63,7 @@ class DatToNcConverter:
         seperator = format_config.get("seperator", "\s+")
         header = format_config.get("header", 0)
         df = pd.read_csv(self.directory + "/" + file, sep = seperator, header = header)
-        return self.resample_to_hourly_steps(df)
-
-    # append dataframe to the end of self.dataframe
-    def append_to_dataframes(self, df):
-        self.dataframe = pd.concat([self.dataframe, df])
+        return self.resample_to_hourly_steps(df)  
 
     def extract_meta_data(self):
         meta_data = {}
@@ -122,7 +119,7 @@ class DatToNcConverter:
             first_n_files = len(self.files)
         for file in tqdm.tqdm(self.files[:first_n_files]):
             df = self.convert_to_dataframe(file)
-            self.append_to_dataframes(df)
+            self.dataframe = pd.concat([self.dataframe, df])
         return self.dataframe
     
     # convert dataframe to netcdf compatible format datatype
@@ -135,6 +132,9 @@ class DatToNcConverter:
 
         # convert all -999.99 values to NaN
         df = df.replace(-999.99, np.nan)
+        
+        # convert all 0.00 values to NaN
+        df = df.replace(0.00, np.nan)
 
         # set datetime column as index
         df = df.set_index("datetime")
