@@ -195,7 +195,7 @@ class TrainingExecuter():
             --snapshot-dir {self.model_dir.name}
             --n-threads 0
             --max-iter {self.total_iterations}
-            --log-interval {self.total_iterations // 20}
+            --log-interval {self.total_iterations // 100}
             --eval-timesteps 0,1
             --loss-criterion 3
             --log-dir {self.log_dir.name}

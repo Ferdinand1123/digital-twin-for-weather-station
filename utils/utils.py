@@ -57,18 +57,17 @@ class ProgressStatus():
     def __repr__(self):
         return self.__str__()
 
-    def __str__(self):    
+    def __str__(self):   
+        if self.phase == "":
+            return ""
         if self.folder_path:
             if not os.path.exists(self.folder_path):
                 self.percentage = 0
             else:
-                self.percentage = min(100, len(os.listdir(self.folder_path)) * 5)
-        if self.phase == "":
-            return ""
+                self.percentage = min(100, len(os.listdir(self.folder_path)) * 1) # if log interval is equal to 1%
         elif self.percentage == "":
             return f"{self.phase}..."
-        else:
-            return f"{self.phase}... {int(self.percentage)}%"
+        return f"{self.phase}... {int(self.percentage)}%"
 
 def plot_n_steps_of_area_from_nc_file(path, n=1, vars="tas", title="", vmin=None, vmax=None):
 
