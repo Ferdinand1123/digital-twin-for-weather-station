@@ -29,7 +29,8 @@ class DataSubmission:
         # Create StationData instance
         self.station = StationData(
             name=self.name,
-            folder_path=self.measurement_dir_path
+            folder_path=self.measurement_dir_path,
+            progress=self.progress
         )
 
         # Update progress phase

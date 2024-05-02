@@ -108,7 +108,7 @@ class DatToNcConverter:
 
     # extract a whole folder of .dat files into to self.dataframe
 
-    def extract(self, first_n_files = None):
+    def extract(self, first_n_files = None, progress = None):
         # initialize dataframes
         self.dataframe = pd.DataFrame()
         if self.keep_original:
@@ -117,7 +117,11 @@ class DatToNcConverter:
         # loading bar for progress
         if first_n_files is None:
             first_n_files = len(self.files)
+        c = 0
         for file in tqdm.tqdm(self.files[:first_n_files]):
+            if progress:
+                progress.update_percentage(c / first_n_files * 100)
+                c += 1
             df = self.convert_to_dataframe(file)
             self.dataframe = pd.concat([self.dataframe, df])
         return self.dataframe

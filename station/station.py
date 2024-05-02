@@ -4,7 +4,7 @@ from station.dat_to_nc_converter import DatToNcConverter
 
 class StationData:
         
-    def __init__(self, name, folder_path: str) -> None:
+    def __init__(self, name, folder_path: str, progress=None) -> None:
         self.name = name
         self.converter = DatToNcConverter(name,
                                 hourly=True,
@@ -12,7 +12,7 @@ class StationData:
                                 keep_original=True
                                 )
         self.metadata = self.converter.meta_data
-        self.converter.extract()
+        self.converter.extract(progress=progress)
         self.converter.transform()
         self.df = self.converter.dataframe
         self.original_df = self.converter.original_df

@@ -1,5 +1,6 @@
 
 from flask import Flask, request, send_file
+from flask_socketio import SocketIO, emit
 
 import sys
 import os
@@ -20,6 +21,7 @@ import tempfile
 import logging
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 
 # Configure Flask app to log to stdout
 app.logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -105,9 +107,12 @@ async def api_train_at_data_submission(uid):
     return response
 
 
-@app.route('/api/available-datasets/<cookie>', methods=['GET'])
-def available_datasets(cookie):
-    return data_storage.get_all_available_datasets(cookie)
+
+
+@socketio.on('request_available_datasets')
+def handle_request_available_datasets(cookie):
+    data = data_storage.get_all_available_datasets(cookie)
+    emit('available_datasets', data)
 
 
 @app.route('/api/delete-dataset/<uid>', methods=['DELETE'])

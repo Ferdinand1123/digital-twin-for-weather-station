@@ -68,7 +68,7 @@ class ProgressStatus():
         elif self.percentage == "":
             return f"{self.phase}..."
         else:
-            return f"{self.phase}... {self.percentage}%"
+            return f"{self.phase}... {int(self.percentage)}%"
 
 def plot_n_steps_of_area_from_nc_file(path, n=1, vars="tas", title="", vmin=None, vmax=None):
 
