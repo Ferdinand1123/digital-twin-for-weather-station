@@ -2,8 +2,8 @@ const socket = io();
 
 window.onload = function(){
     
-    request_available_datasets()
-    setInterval(request_available_datasets, 1000);
+    update_available_datasets()
+    setInterval(update_available_datasets, 1000);
 }
 
 function getUidFromCookie() {
@@ -106,6 +106,26 @@ function list_available_datasets(data) {
 }
 
 function request_available_datasets() {
+    // if tab is not active, do not request data
+    if (document.hidden) {
+        return;
+    }
+    const cookie = getUidFromCookie();
+    
+    fetch('/api/available-datasets/' + cookie)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => list_available_datasets(data))
+    .catch(error => {
+        console.error('Error:', error)
+    });
+}
+
+function update_available_datasets() {
     if (document.hidden) {
         return;
     }

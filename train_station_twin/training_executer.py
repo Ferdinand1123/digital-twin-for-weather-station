@@ -227,10 +227,10 @@ class TrainingExecuter():
     def get_path_of_final_model(self):
         # assert final is there
         final_path = self.model_dir.name + '/' + self.model_dir_subfolder_name + '/final.pth'
-        assert os.path.exists(final_path)
+        assert os.path.exists(final_path), "Final model not found" + str(os.listdir(self.model_dir.name + '/' + self.model_dir_subfolder_name))
         # rename to final-{iteration-count}.pth
         new_path = final_path.replace('final.pth', f'final-{self.total_iterations}.pth')
-        os.rename(final_path, new_path)
+        shutil.copy(final_path, new_path)
         return new_path
 
     def make_zip_folder(self, folder_path):
