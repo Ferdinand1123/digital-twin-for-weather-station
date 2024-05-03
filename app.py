@@ -56,9 +56,9 @@ def api_fill_in_at_data_submission(uid):
     
     evaluation = EvaluatuionExecuter(
         station=data_submission.station,
-        model_path=data_submission.model_path)
+        model_path=data_submission.model_path,
+        progress=data_submission.progress)
     
-    evaluation.extract()
     results_path = evaluation.execute()    
     
     infilling = InfillingWriter()
@@ -70,8 +70,6 @@ def api_fill_in_at_data_submission(uid):
     ) 
     
     response = send_file(output_path, as_attachment=True)
-    
-    time.sleep(1000)
     
     evaluation.cleanup()
     infilling.cleanup()

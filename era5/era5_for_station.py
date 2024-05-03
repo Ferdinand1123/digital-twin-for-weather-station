@@ -13,23 +13,33 @@ import datetime
 
 class Era5Downloader():
         
-    def __init__(self, station: StationData, grib_dir_path: str, hook):
+    def __init__(self, station: StationData, grib_dir_path: str, hook, progress=None):
         self.station = station
         self.grib_dir_path = grib_dir_path
         self.lat = self.station.metadata.get("latitude")
         self.lon = self.station.metadata.get("longitude")
         self.hook = hook
+        self.progress = progress
         
+    def execute(self):
+        if self.progress:
+            self.progress.update_phase("Downloading ERA5 data")
+        self.download()
+        if self.progress:
+            self.progress.update_phase("")
 
 class DownloadEra5ForStation(Era5Downloader):
         
-    def __init__(self, station: StationData, grib_dir_path: str, hook):
-        super().__init__(station, grib_dir_path, hook)
+    def __init__(self, station: StationData, grib_dir_path: str, hook, progress=None):
+        super().__init__(station, grib_dir_path, hook, progress)
         self.years_by_month_dict = self.station.get_all_months_in_df()
-        self.download()
+        self.execute()
         
     def download(self):
+        count = 0
         for year, months in self.years_by_month_dict.items():
+            if self.progress:
+                self.progress.update_percentage(count / len(self.years_by_month_dict.items()))
             if len(months) < 10:
                 self.hook.download_months(
                     year,
@@ -41,15 +51,16 @@ class DownloadEra5ForStation(Era5Downloader):
                     year,
                     self.grib_dir_path
                 )
+            count += 1
                 
                 
             
 class DownloadEra5ForStationGaps(Era5Downloader):
         
-    def __init__(self, station: StationData, grib_dir_path: str, hook):
-        super().__init__(station, grib_dir_path, hook)
+    def __init__(self, station: StationData, grib_dir_path: str, hook, progress=None):
+        super().__init__(station, grib_dir_path, hook, progress)
         self.hours_missing = self.station.find_gaps()
-        self.download()
+        self.execute()
         
     def download(self):
   
@@ -64,7 +75,10 @@ class DownloadEra5ForStationGaps(Era5Downloader):
                 grouped_hours_by_day[hour.date()] = []
             grouped_hours_by_day[hour.date()].append(hour.hour)
 
+        count = 0
         for day, hours in grouped_hours_by_day.items():
+            if self.progress:
+                self.progress.update_percentage(count / len(grouped_hours_by_day.items()))
             self.hook.download_hours_on_same_day(
                 day.year,
                 day.month,
@@ -72,6 +86,7 @@ class DownloadEra5ForStationGaps(Era5Downloader):
                 hours,
                 self.grib_dir_path
             )
+            count += 1
 
 
 class Era5ForStationCropper():

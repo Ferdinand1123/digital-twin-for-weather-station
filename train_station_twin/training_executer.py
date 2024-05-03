@@ -60,7 +60,6 @@ class TrainingExecuter():
         self.total_iterations = iterations
 
     async def execute(self):
-        self.progress.update_phase("Downloading ERA5 data")
         self.get_era5_for_station()
         self.progress.update_phase("Preparing Training Set")
         self.transform_station_to_expected_output()
@@ -138,7 +137,8 @@ class TrainingExecuter():
         DownloadEra5ForStation(
             station=self.station,
             grib_dir_path=temp_grib_dir.name,
-            hook=era5_hook
+            hook=era5_hook,
+            progress=self.progress
         )
 
         era5_temp_path = self.temp_dir.name + '/' + self.era5_file_name
@@ -226,12 +226,14 @@ class TrainingExecuter():
 
     def get_path_of_final_model(self):
         # assert final is there
-        final_path = self.model_dir.name + '/' + self.model_dir_subfolder_name + '/final.pth'
-        assert os.path.exists(final_path), "Final model not found" + str(os.listdir(self.model_dir.name + '/' + self.model_dir_subfolder_name))
-        # rename to final-{iteration-count}.pth
-        new_path = final_path.replace('final.pth', f'final-{self.total_iterations}.pth')
-        shutil.copy(final_path, new_path)
-        return new_path
+        final_model_default_path = self.model_dir.name + '/' + self.model_dir_subfolder_name + '/final.pth'
+        human_friendly_path = final_model_default_path.replace('final.pth', f'{self.station.name}-model-{self.total_iterations}.pth')
+        try:
+            assert os.path.exists(final_model_default_path)
+            shutil.copy(final_model_default_path, human_friendly_path)
+        except AssertionError:
+            assert os.path.exist(human_friendly_path), "Final model not found" + str(os.listdir(self.model_dir.name + '/' + self.model_dir_subfolder_name))
+        return human_friendly_path
 
     def make_zip_folder(self, folder_path):
         shutil.make_archive(folder_path, 'zip', folder_path)

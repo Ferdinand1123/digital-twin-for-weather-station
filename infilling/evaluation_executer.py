@@ -16,10 +16,11 @@ from station.station import StationData
 from utils.utils import FillAllTasWithValuesInNcFile
 
 class EvaluatuionExecuter:
-    def __init__(self, station: StationData, model_path):
+    def __init__(self, station: StationData, model_path, progress=None):
         self.model_path = model_path
         self.station = station
-            
+        self.progress = progress
+        
         self.era5_file_name = "era5_merged.nc"
         self.cleaned_file_name = "cleaned.nc"
         self.subfolder_name = "test"    
@@ -36,10 +37,9 @@ class EvaluatuionExecuter:
         self.output_dir = tempfile.TemporaryDirectory()
         self.log_dir = tempfile.TemporaryDirectory()
         
-    def extract(self):
-        self.get_era5_for_station()
 
     def execute(self):
+        self.get_era5_for_station()
         self.create_cleaned_nc_file()
         path = self.get_eval_args_txt()
         return self.crai_evaluate(path)     
@@ -60,7 +60,8 @@ class EvaluatuionExecuter:
         DownloadEra5ForStationGaps(
             station=self.station,
             grib_dir_path=temp_grib_dir.name,
-            hook=era5_hook
+            hook=era5_hook,
+            progress=self.progress
         )
           
         Era5DataFromGribToNc(
@@ -104,13 +105,17 @@ class EvaluatuionExecuter:
             f.write(eval_args)
         return eval_args_path
     
-    def crai_evaluate(self, eval_args_path):     
+    def crai_evaluate(self, eval_args_path): 
+        if self.progress:
+            self.progress.update_phase("Evaluating")    
         try:   
             print("Active conda environment:", os.environ['CONDA_DEFAULT_ENV'])
             evaluate(eval_args_path)
         except Exception as e:
             print("Error during evaluation:", e)
             print("Check the log files in", self.log_dir.name)
+        if self.progress:
+            self.progress.update_phase("")
         return self.output_dir.name + "/output_output.nc"
               
     def cleanup(self):

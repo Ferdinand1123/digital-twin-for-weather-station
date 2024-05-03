@@ -100,7 +100,8 @@ class DataSubmission:
         first_last_name_str = first_file_name + "-" + last_file_name
         self.name = rtf_file_name + "_" + first_last_name_str
         if self.model_path:
-            self.name += "_model-" + self.model_path.split("/")[-1].split(".")[0]
+            self.name += "_model-" + self.model_path.split("/")[-1].split(
+                "model-")[-1].split(".")[0]
           
     def add_model(self, model_source_path):
         self.model_path = self.model_dir.name + "/" + model_source_path.split("/")[-1]
