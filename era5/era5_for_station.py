@@ -25,8 +25,6 @@ class Era5Downloader():
         if self.progress:
             self.progress.update_phase("Downloading ERA5 data")
         self.download()
-        if self.progress:
-            self.progress.update_phase("")
 
 class DownloadEra5ForStation(Era5Downloader):
         

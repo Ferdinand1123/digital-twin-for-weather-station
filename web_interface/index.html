@@ -10,8 +10,11 @@
 
 <body>
     <div class="container">
+        <img class="logo" src="https://www.dkrz.de/@@site-logo/dkrz.svg" alt="">
+    </div>
+    <div class="container">
         <h1>Reconstruct weather station data</h1>
-        <label class="section-label" for="">Data input</label>
+        <label class="section-label" for="">Add Weather Station</label>
         <div id="data-input" class="box">
             <div>
                 <p class="label">Measurements</p>
@@ -20,7 +23,7 @@
                 </div>
             </div>
             <div>
-                <p class="label">Model</p>
+                <p class="label">Model (optional)</p>
                 <div id="model-input">
                     <input type="file" id="model">
                 </div>
@@ -30,7 +33,7 @@
         <button type="button" id="submit_btn" onclick="submitForm()">Submit</button>
     </div>
     <div class="container">
-        <label class="section-label" for="">Uploaded Datasets</label>
+        <label class="section-label" for="">Serverside: Uploaded Stations</label>
         <div id="dataset-list" class="box">
             
         </div>
