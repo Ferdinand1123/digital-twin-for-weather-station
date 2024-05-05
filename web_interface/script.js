@@ -41,6 +41,8 @@ function submitForm() {
 
     if (!hasDatFile || !hasRtfFile) {
         alert('Please select at least one ".dat" file and one ".rtf" file as measurement files.');
+        submitButton.textContent = submit_button_text_before;
+        submitButton.disabled = false;   
         return;
     }
 
@@ -90,9 +92,7 @@ function list_available_datasets(data) {
                 if (dataset.has_model) {                
                     ctaArea.appendChild(get_fill_in_button(dataset.uid));
                     ctaArea.appendChild(get_model_button(dataset.uid));
-                }
-                if (dataset.has_pdf) {
-                    ctaArea.appendChild(get_pdf_button(dataset.uid));
+                    ctaArea.appendChild(get_eval_as_pdf_button(dataset.uid));
                 }
                 ctaArea.appendChild(get_train_button(dataset.uid));
                 ctaArea.appendChild(get_delete_button(dataset.uid));
@@ -201,8 +201,8 @@ function request_delete_for_dataset(uid) {
     });
 }
 
-function request_pdf_for_dataset(uid) {
-    fetch(`/api/training-results-as-pdf/${uid}`)
+function validation_to_pdf(uid) {
+    fetch(`/api/validate-model/${uid}`)
     .then(response => {
         if (!response.ok) {
             throw new Error('Network response was not ok');
@@ -279,10 +279,10 @@ function get_delete_button(uid) {
     return deleteButton;
 }
 
-function get_pdf_button(uid) {
+function get_eval_as_pdf_button(uid) {
     const pdfButton = document.createElement('button');
-    pdfButton.textContent = 'Training results'
-    pdfButton.onclick = () => request_pdf_for_dataset(uid);
+    pdfButton.textContent = 'Evaluate'
+    pdfButton.onclick = () => validation_to_pdf(uid);
     return pdfButton;
 }
 

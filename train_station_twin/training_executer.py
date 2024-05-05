@@ -3,14 +3,9 @@ from era5.era5_download_hook import Era5DownloadHook
 from era5.era5_for_station import DownloadEra5ForStation, Era5ForStationCropper
 from era5.era5_from_grib_to_nc import Era5DataFromGribToNc
 
-from infilling.evaluation_executer import EvaluatuionExecuter
 
 from utils.utils import FillAllTasWithValuesInNcFile, ProgressStatus
 
-
-from fpdf import FPDF
-
-from train_station_twin.training_analysis import era5_vs_reconstructed_comparision_to_df, plot_n_steps_of_df
 from crai.climatereconstructionai import train
 
 import subprocess
@@ -66,67 +61,9 @@ class TrainingExecuter():
         self.copy_train_folder_as_val_folder()
         path = self.get_train_args_txt()
         model_dir_path = await self.crai_train(path)
-        self.validate()
         self.progress.update_phase("")
         return self.make_zip_folder(model_dir_path)
 
-    def validate(self):
-        # to be used after execute
-        assert os.path.exists(self.get_path_of_final_model()
-                              ), "Model not found after training"
-        assert os.path.exists(self.era5_path)
-
-        evaluation = EvaluatuionExecuter(
-            station=self.station,
-            model_path=self.get_path_of_final_model()
-        )
-        # don't run evaluation.execute() because it will optain ERA5 to infill gaps
-
-        # copy the era5 training data to the evaluation directory
-        shutil.copy(self.era5_path, evaluation.era5_path)
-
-        # prepare expected output cleaned
-        reconstructed_path = evaluation.execute()
-
-        df = era5_vs_reconstructed_comparision_to_df(
-            era5_path=self.era5_path,
-            reconstructed_path=reconstructed_path,
-            measurements_path=self.station_nc_file_path
-        )
-
-        coords = {
-            "station_lon": self.station.metadata.get("longitude"),
-            "station_lat": self.station.metadata.get("latitude"),
-            "era5_lons": xr.open_dataset(self.era5_path).lon.values,
-            "era5_lats": xr.open_dataset(self.era5_path).lat.values
-        }
-
-        pdf = FPDF(format='A3')
-        pdf.add_page(orientation='L')
-
-        saved_to_path = plot_n_steps_of_df(
-            df,
-            coords=coords,
-            as_delta=True,
-            title=f"{self.station.name}, Reconstructed vs Measurements",
-            save_to=self.model_dir.name
-        )
-
-        pdf.image(saved_to_path, h=260)
-
-        saved_to_path_2 = plot_n_steps_of_df(
-            df,
-            coords=coords,
-            as_delta=False,
-            title=f"{self.station.name}, Reconstructed",
-            save_to=self.model_dir.name
-        )
-        pdf.image(saved_to_path_2, h=260)
-
-        pdf.output(self.get_pdf_path())
-
-    def get_pdf_path(self):
-        return self.model_dir.name + '/validation.pdf'
 
     def get_era5_for_station(self):
         era5_hook = Era5DownloadHook(lat=self.station.metadata.get("latitude"),

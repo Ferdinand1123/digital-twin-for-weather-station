@@ -9,10 +9,10 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from station.data_submission import DataSubmission, data_storage
 from station.station import StationData
-from infilling.evaluation_executer import EvaluatuionExecuter
+from infilling.evaluation_executer import EvaluationExecuter
 from infilling.infilling_writer import InfillingWriter
 from train_station_twin.training_executer import TrainingExecuter
-
+from train_station_twin.validation_to_pdf import Validator
 from utils.utils import ProgressStatus
 
 import time
@@ -54,7 +54,7 @@ def api_fill_in_at_data_submission(uid):
     if not data_submission.model_path:
         return "Model missing", 404
     
-    evaluation = EvaluatuionExecuter(
+    evaluation = EvaluationExecuter(
         station=data_submission.station,
         model_path=data_submission.model_path,
         progress=data_submission.progress)
@@ -96,7 +96,6 @@ async def api_train_at_data_submission(uid):
     
     output_path = await training.execute()
     data_submission.add_model(training.get_path_of_final_model())
-    data_submission.add_pdf(training.get_pdf_path())
     
     response = send_file(output_path, as_attachment=True)
     
@@ -121,13 +120,20 @@ def delete_dataset(uid):
     data_storage.delete_data_submission(uid)
     return "Dataset deleted"
 
-@app.route('/api/training-results-as-pdf/<uid>', methods=['GET'])
+@app.route('/api/validate-model/<uid>', methods=['GET'])
 def get_pdf(uid):
     data_submission = data_storage.get_data_submission(uid)
     if not data_submission:
         return "Data submission not found", 404
     if not data_submission.pdf_path:
-        return "PDF missing", 404
+        if not data_submission.model_path:
+            return "Model missing", 404
+        validation = Validator(
+            station=data_submission.station,
+            model_path=data_submission.model_path,
+            progress=data_submission.progress
+        )
+        data_submission.add_pdf(validation.get_pdf_path())
     return send_file(data_submission.pdf_path)
 
 @app.route('/api/download-model/<uid>', methods=['GET'])

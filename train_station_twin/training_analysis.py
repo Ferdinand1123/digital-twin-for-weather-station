@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import xarray as xr
 import utils.utils as utils
 
-
 def era5_vs_reconstructed_comparision_to_df(era5_path, reconstructed_path, measurements_path):
     
     era5_data = xr.open_dataset(era5_path)
