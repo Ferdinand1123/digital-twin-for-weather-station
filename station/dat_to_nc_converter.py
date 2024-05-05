@@ -246,8 +246,8 @@ class DatToNcConverter:
         ds.to_netcdf(save_to_path)
         return save_to_path
 
-    def execute(self, location=None):
-        self.extract()
+    def execute(self, location=None, first_n_files=None):
+        self.extract(first_n_files=first_n_files)
         self.transform()
         if location is None:
             location = self.target_directory
