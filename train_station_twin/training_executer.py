@@ -33,11 +33,11 @@ class TrainingExecuter():
         if local:
             # make a temporary directory in the current working directory with the station name and the current time as YYYY-MM-DD_HH-MM-SS
             temp_path = f'./executed_trainings/{station.name}_{time.strftime("%Y-%m-%d_%H-%M-%S")}'
-            shutil.mktree(temp_path)
-            self.target_dir = tempfile.TemporaryDirectory(dir=temp_path, prefix='target')
-            self.temp_dir = tempfile.TemporaryDirectory(dir=temp_path, prefix='temp')
-            self.model_dir = tempfile.TemporaryDirectory(dir=temp_path, prefix='model')
-            self.log_dir = tempfile.TemporaryDirectory(dir=temp_path, prefix='log')
+            os.mkdir(temp_path)
+            self.target_dir = tempfile.TemporaryDirectory(dir=temp_path, prefix='target_')
+            self.temp_dir = tempfile.TemporaryDirectory(dir=temp_path, prefix='temp_')
+            self.model_dir = tempfile.TemporaryDirectory(dir=temp_path, prefix='model_')
+            self.log_dir = tempfile.TemporaryDirectory(dir=temp_path, prefix='log_')
         else:
             self.target_dir = tempfile.TemporaryDirectory()
             self.temp_dir = tempfile.TemporaryDirectory()
