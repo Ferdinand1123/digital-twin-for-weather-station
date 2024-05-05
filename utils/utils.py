@@ -2,6 +2,7 @@ import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
 import os
+import cartopy.crs as ccrs
 
 class FillAllTasWithValuesInNcFile():
     def __init__(self, values, original_path, save_to_path):
@@ -88,7 +89,7 @@ def plot_n_steps_of_area_from_nc_file(path, n=1, vars="tas", title="", vmin=None
 
     for time_index in time_index_list:
         # set title
-        title += f"\n{dataset.time.values[time_index].astype('datetime64[s]').astype('O')}"
+        title = f"\n{dataset.time.values[time_index].astype('datetime64[s]').astype('O')}"
 
         # subtitle lat lon area
         subtitle = f"\nLat: {pretty_lat(_lat[0])} to {pretty_lat(_lat[-1])}" + \
