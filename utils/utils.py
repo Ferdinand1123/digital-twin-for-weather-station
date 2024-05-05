@@ -161,4 +161,14 @@ def plot_measurements_df(df):
     fig, ax = plt.subplots(1, 1)
     ax.plot(df.index, df.tas, label="tas")
     ax.legend()
+    
+    # turn x-axis labels
+    plt.xticks(rotation=45)
+    
+    # set title
+    plt.title("Temperature over time")
+    
+    # figure size
+    fig.set_size_inches(18.5, 10.5)
+    
     plt.show()

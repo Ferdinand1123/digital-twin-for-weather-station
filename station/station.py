@@ -4,7 +4,8 @@ from station.dat_to_nc_converter import DatToNcConverter
 
 class StationData:
         
-    def __init__(self, name, folder_path: str, progress=None, first_n_files=None) -> None:
+    def __init__(self, name, folder_path: str, progress=None,
+                 first_n_files=None, mask_years=[]) -> None:
         self.name = name
         self.converter = DatToNcConverter(name,
                                 hourly=True,
@@ -14,6 +15,7 @@ class StationData:
         self.metadata = self.converter.meta_data
         self.converter.extract(first_n_files=first_n_files, progress=progress)
         self.converter.transform()
+        self.converter.dataframe = self.converter.dataframe[~self.converter.dataframe.index.year.isin(mask_years)]
         self.df = self.converter.dataframe
         self.original_df = self.converter.original_df
         assert not self.df.empty, "Input Dataframe is empty"
