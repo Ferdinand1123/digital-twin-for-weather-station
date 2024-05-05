@@ -20,20 +20,29 @@ import xarray as xr
 import re
 
 import numpy as np
-
+import time
 
 class TrainingExecuter():
 
-    def __init__(self, station: StationData, progress: ProgressStatus, iterations):
+    def __init__(self, station: StationData, progress: ProgressStatus, iterations, local=False):
         self.station = station
         assert station.name is not None
         assert station.metadata is not None
         assert station.metadata.get("latitude") is not None
         assert station.metadata.get("longitude") is not None
-        self.target_dir = tempfile.TemporaryDirectory()
-        self.temp_dir = tempfile.TemporaryDirectory()
-        self.model_dir = tempfile.TemporaryDirectory()
-        self.log_dir = tempfile.TemporaryDirectory()
+        if local:
+            # make a temporary directory in the current working directory with the station name and the current time as YYYY-MM-DD_HH-MM-SS
+            temp_path = f'./executed_trainings/{station.name}_{time.strftime("%Y-%m-%d_%H-%M-%S")}'
+            shutil.mktree(temp_path)
+            self.target_dir = tempfile.TemporaryDirectory(dir=temp_path, prefix='target')
+            self.temp_dir = tempfile.TemporaryDirectory(dir=temp_path, prefix='temp')
+            self.model_dir = tempfile.TemporaryDirectory(dir=temp_path, prefix='model')
+            self.log_dir = tempfile.TemporaryDirectory(dir=temp_path, prefix='log')
+        else:
+            self.target_dir = tempfile.TemporaryDirectory()
+            self.temp_dir = tempfile.TemporaryDirectory()
+            self.model_dir = tempfile.TemporaryDirectory()
+            self.log_dir = tempfile.TemporaryDirectory()
 
         self.era5_file_name = "era5_merged.nc"
         self.expected_output_file_name = "cleaned.nc"
@@ -63,7 +72,60 @@ class TrainingExecuter():
         model_dir_path = await self.crai_train(path)
         self.progress.update_phase("")
         return self.make_zip_folder(model_dir_path)
+    
+    def get_sbatch_script(self):
+        # make subdirectory for slurm logs
+        user_home_dir = os.path.expanduser("~")
+        script_txt = f'''#!/usr/bin/env bash
 
+#SBATCH -J crai-train
+#SBATCH --output {self.temp_dir.name}/slurm_logs/crai_crai-train_%j.log
+#SBATCH -p gpu
+#SBATCH -A bm1159
+#SBATCH --time=12:00:00
+#SBATCH --mem=485G
+#SBATCH --exclusive
+#SBATCH --constraint a100_80
+
+cd {os.getcwd()}
+module load python3
+
+# Initialize Conda (add this line)
+eval "$(conda shell.bash hook)"
+
+conda activate {user_home_dir}/.conda/envs/crai
+
+python -m climatereconstructionai.train --load-from-file {self.get_train_args_txt()}
+'''
+        # save script to file
+        script_path = self.temp_dir.name + '/train_script.sh'
+        with open(script_path, 'w') as f:
+            f.write(script_txt)
+        subprocess.run(['chmod', '+x', script_path])
+        return script_path
+
+    def execute_with_sbatch(self):
+        self.get_era5_for_station()
+        self.transform_station_to_expected_output()
+        self.copy_train_folder_as_val_folder()
+        result = subprocess.run(['sbatch', self.get_sbatch_script()], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+        # Check if the command executed successfully
+        if result.returncode == 0:
+            # Extract the job ID from the output
+            output_lines = result.stdout.splitlines()
+            if output_lines:
+                # The job ID is typically in the first line of the output
+                job_id_line = output_lines[0]
+                # Split the line by whitespace and get the last element (job ID)
+                job_id = job_id_line.split()[-1]
+                return job_id
+            else:
+                print("No output received from sbatch command.")
+                return
+        else:
+            print("Error submitting batch job:", result.stderr.strip())
+            return
 
     def get_era5_for_station(self):
         era5_hook = Era5DownloadHook(lat=self.station.metadata.get("latitude"),
@@ -160,6 +222,7 @@ class TrainingExecuter():
             raise Exception("Error during training")
 
         return self.model_dir.name
+    
 
     def get_path_of_final_model(self):
         # assert final is there

@@ -12,7 +12,7 @@ from station.station import StationData
 import threading
 
 class DataSubmission:
-    def __init__(self, name="", cookie=False):
+    def __init__(self, name="", cookie=False, mask_years=[]):
         self.data = None
         self.measurement_dir = tempfile.TemporaryDirectory()
         self.measurement_dir_path = self.measurement_dir.name # such that someone can create a DataSubmission without submit function and instead by adding the folder manually
@@ -23,6 +23,7 @@ class DataSubmission:
         self.cookie = cookie
         self.progress = ProgressStatus()
         self.station = None
+        self.mask_years = mask_years
         
     def initialize_station(self):
         self.progress.update_phase("Extracting Station")
@@ -30,7 +31,8 @@ class DataSubmission:
         self.station = StationData(
             name=self.name,
             folder_path=self.measurement_dir_path,
-            progress=self.progress
+            progress=self.progress,
+            mask_years=self.mask_years
         )
 
         # Update progress phase
