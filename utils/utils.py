@@ -123,9 +123,13 @@ def plot_n_steps_of_area_from_nc_file(path, n=1, vars="tas", title="", vmin=None
             # Add subtitle
             plt.figtext(0.125, 0.05, subtitle, wrap=True,
                         horizontalalignment='left', fontsize=12)
+            
+            # fig size
+            fig.set_size_inches(10, 10)
 
             # Show the plot
             plt.show()
+            
     return time_index_list
 
 
