@@ -55,12 +55,16 @@ class Validator():
 
         era5_temp_path = self.temp_dir.name + '/era5_temp'
 
+        self.progress.update_phase("Converts grib to nc")
+
         Era5DataFromGribToNc(
             temp_grib_dir.name,
             era5_target_file_path=era5_temp_path
         )
 
         temp_grib_dir.cleanup()
+
+        self.progress.update_phase("Cropping ERA5")
 
         cropper = Era5ForStationCropper(
             station=self.station,
@@ -76,6 +80,8 @@ class Validator():
         assert os.path.exists(self.model_path), "Model not found after training"
         assert os.path.exists(self.era5_path)
 
+        self.progress.update_phase("Evaluating")
+
         evaluation = EvaluationExecuter(
             station=self.station,
             model_path=self.model_path
@@ -86,7 +92,11 @@ class Validator():
         shutil.copy(self.era5_path, evaluation.era5_path)
 
         # prepare expected output cleaned
-        reconstructed_path = evaluation.execute()
+        evaluation.create_cleaned_nc_file()
+        args_path = evaluation.get_eval_args_txt()
+        reconstructed_path = evaluation.crai_evaluate(args_path)
+
+        self.progress.update_phase("Plotting")
 
         df = era5_vs_reconstructed_comparision_to_df(
             era5_path=self.era5_path,
@@ -108,22 +118,68 @@ class Validator():
             df,
             coords=coords,
             as_delta=True,
-            title=f"{self.station.name}",
+            title=f"{self.station.name}, Difference to Measurements", 
             save_to=self.temp_dir.name
         )
 
-        pdf.image(saved_to_path, h=260)
+        pdf.image(saved_to_path, h=240)
 
-        saved_to_path_2 = plot_n_steps_of_df(
+        saved_to_path = plot_n_steps_of_df(
             df,
             coords=coords,
             as_delta=False,
-            title=f"{self.station.name}, Reconstructed",
+            title=f"{self.station.name}",
             save_to=self.temp_dir.name
         )
-        pdf.image(saved_to_path_2, h=260)
+        pdf.image(saved_to_path, h=240)
 
+        for _ in range(5):
+            saved_to_path = plot_n_steps_of_df(
+                df,
+                coords=coords,
+                as_delta=False,
+                n=168,
+                title=f"{self.station.name}, Random 7 Days ({_})",
+                save_to=self.temp_dir.name
+            )
+            pdf.image(saved_to_path, h=240)
+        
+        df = df.resample('D').mean()
+        
+        saved_to_path = plot_n_steps_of_df(
+            df,
+            coords=coords,
+            as_delta=True,
+            title=f"{self.station.name} - Daily, delta to measurements",
+            save_to=self.temp_dir.name
+        )
+        
+        saved_to_path = plot_n_steps_of_df(
+            df,
+            coords=coords,
+            as_delta=False,
+            title=f"{self.station.name} - Daily",
+            save_to=self.temp_dir.name
+        )
+        
+        pdf.image(saved_to_path, h=240)
+        
+        df = df.resample('M').mean()
+        
+        saved_to_path = plot_n_steps_of_df(
+            df,
+            coords=coords,
+            as_delta=False,
+            title=f"{self.station.name} - Monthly",
+            save_to=self.temp_dir.name
+        )
+        
+        pdf.image(saved_to_path, h=240)
+        
+        
         pdf.output(self.get_pdf_path())
+        
+        self.progress.update_phase("")
         
     def get_pdf_path(self):
         return self.temp_dir.name + '/validation.pdf'

@@ -53,7 +53,6 @@ def plot_n_steps_of_df(df, coords, as_delta, n=None, title=None, save_to=False):
     time = df.index.values
     if n is None:
         n = len(df)
-    
     # random slice of n consecutive datapoints
     import random
     slice_start = random.randint(0, len(time) - n)
@@ -78,7 +77,7 @@ def plot_n_steps_of_df(df, coords, as_delta, n=None, title=None, save_to=False):
     correlation_era5_nearest = df["era5_nearest"].corr(df["measurements"])
   
     rmse_reconstructed = np.sqrt(np.nanmean((reconstructed_median_values[time_slice] - measurements_values[time_slice])**2))
-    rmse_era5_nearest = np.sqrt(((era5_nearest_values[time_slice] - measurements_values[time_slice])**2).mean())
+    rmse_era5_nearest = np.sqrt(np.nanmean((era5_nearest_values[time_slice] - measurements_values[time_slice])**2))
     
     
     if as_delta:
