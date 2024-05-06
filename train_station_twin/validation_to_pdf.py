@@ -86,7 +86,9 @@ class Validator():
         shutil.copy(self.era5_path, evaluation.era5_path)
 
         # prepare expected output cleaned
-        reconstructed_path = evaluation.execute()
+        evaluation.create_cleaned_nc_file()
+        args_path = evaluation.get_eval_args_txt()
+        evaluation.crai_evaluate(args_path)
 
         df = era5_vs_reconstructed_comparision_to_df(
             era5_path=self.era5_path,
