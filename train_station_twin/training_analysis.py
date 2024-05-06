@@ -53,7 +53,6 @@ def plot_n_steps_of_df(df, coords, as_delta, n=None, title=None, save_to=False):
     time = df.index.values
     if n is None:
         n = len(df)
-    
     # random slice of n consecutive datapoints
     import random
     slice_start = random.randint(0, len(time) - n)

@@ -55,12 +55,16 @@ class Validator():
 
         era5_temp_path = self.temp_dir.name + '/era5_temp'
 
+        self.progress.update_phase("Converts grib to nc")
+
         Era5DataFromGribToNc(
             temp_grib_dir.name,
             era5_target_file_path=era5_temp_path
         )
 
         temp_grib_dir.cleanup()
+
+        self.progress.update_phase("Cropping ERA5")
 
         cropper = Era5ForStationCropper(
             station=self.station,
@@ -76,6 +80,8 @@ class Validator():
         assert os.path.exists(self.model_path), "Model not found after training"
         assert os.path.exists(self.era5_path)
 
+        self.progress.update_phase("Evaluating")
+
         evaluation = EvaluationExecuter(
             station=self.station,
             model_path=self.model_path
@@ -89,6 +95,8 @@ class Validator():
         evaluation.create_cleaned_nc_file()
         args_path = evaluation.get_eval_args_txt()
         reconstructed_path = evaluation.crai_evaluate(args_path)
+
+        self.progress.update_phase("Plotting")
 
         df = era5_vs_reconstructed_comparision_to_df(
             era5_path=self.era5_path,
@@ -128,10 +136,10 @@ class Validator():
         for _ in range(5):
             saved_to_path = plot_n_steps_of_df(
                 df,
-                n=168,
                 coords=coords,
                 as_delta=False,
-                title=f"{self.station.name}, Random 7 Days",
+                n=168,
+                title=f"{self.station.name}, Random 7 Days ({_})",
                 save_to=self.temp_dir.name
             )
             pdf.image(saved_to_path, h=240)
@@ -170,6 +178,8 @@ class Validator():
         
         
         pdf.output(self.get_pdf_path())
+        
+        self.progress.update_phase("")
         
     def get_pdf_path(self):
         return self.temp_dir.name + '/validation.pdf'
