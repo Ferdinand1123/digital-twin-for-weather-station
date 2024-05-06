@@ -112,7 +112,7 @@ class DataSubmission:
         return
     
     def add_pdf(self, pdf_source_path):
-        self.pdf_path = self.model_dir.name + "/training.pdf"
+        self.pdf_path = self.model_dir.name + "/eval.pdf"
         shutil.copy(pdf_source_path, self.pdf_path)
         return
     
