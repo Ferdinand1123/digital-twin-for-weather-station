@@ -32,7 +32,7 @@ class TrainingExecuter():
         assert station.metadata.get("longitude") is not None
         if local:
             # make a temporary directory in the current working directory with the station name and the current time as YYYY-MM-DD_HH-MM-SS
-            temp_path = f'./executed_trainings/{station.name}_{time.strftime("%Y-%m-%d_%H-%M-%S")}'
+            temp_path = f'./executed_trainings/{station.name}_{time.strftime("%Y%m%d-%H%M")}'
             os.mkdir(temp_path)
             self.target_dir = tempfile.TemporaryDirectory(dir=temp_path, prefix='target_')
             self.temp_dir = tempfile.TemporaryDirectory(dir=temp_path, prefix='temp_')
