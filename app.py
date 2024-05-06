@@ -125,15 +125,14 @@ def get_pdf(uid):
     data_submission = data_storage.get_data_submission(uid)
     if not data_submission:
         return "Data submission not found", 404
-    if not data_submission.pdf_path:
-        if not data_submission.model_path:
-            return "Model missing", 404
-        validation = Validator(
-            station=data_submission.station,
-            model_path=data_submission.model_path,
-            progress=data_submission.progress
-        )
-        data_submission.add_pdf(validation.get_pdf_path())
+    if not data_submission.model_path:
+        return "Model missing", 404
+    validation = Validator(
+        station=data_submission.station,
+        model_path=data_submission.model_path,
+        progress=data_submission.progress
+    )
+    data_submission.add_pdf(validation.get_pdf_path())
     return send_file(data_submission.pdf_path)
 
 @app.route('/api/download-model/<uid>', methods=['GET'])
