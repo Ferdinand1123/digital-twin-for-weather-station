@@ -156,7 +156,7 @@ class DatToNcConverter:
             if series.nunique() <= 2:
                 return np.nan
             else:
-                return np.mean(series)
+                return np.median(series)
 
         if self.hourly:
             # merge all minutely data into one row using the mean
