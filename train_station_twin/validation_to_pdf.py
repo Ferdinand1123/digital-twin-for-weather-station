@@ -88,7 +88,7 @@ class Validator():
         # prepare expected output cleaned
         evaluation.create_cleaned_nc_file()
         args_path = evaluation.get_eval_args_txt()
-        evaluation.crai_evaluate(args_path)
+        reconstructed_path = evaluation.crai_evaluate(args_path)
 
         df = era5_vs_reconstructed_comparision_to_df(
             era5_path=self.era5_path,
@@ -110,21 +110,65 @@ class Validator():
             df,
             coords=coords,
             as_delta=True,
-            title=f"{self.station.name}",
+            title=f"{self.station.name}, Difference to Measurements", 
             save_to=self.temp_dir.name
         )
 
-        pdf.image(saved_to_path, h=260)
+        pdf.image(saved_to_path, h=240)
 
-        saved_to_path_2 = plot_n_steps_of_df(
+        saved_to_path = plot_n_steps_of_df(
             df,
             coords=coords,
             as_delta=False,
-            title=f"{self.station.name}, Reconstructed",
+            title=f"{self.station.name}",
             save_to=self.temp_dir.name
         )
-        pdf.image(saved_to_path_2, h=260)
+        pdf.image(saved_to_path, h=240)
 
+        for _ in range(5):
+            saved_to_path = plot_n_steps_of_df(
+                df,
+                n=168,
+                coords=coords,
+                as_delta=False,
+                title=f"{self.station.name}, Random 7 Days",
+                save_to=self.temp_dir.name
+            )
+            pdf.image(saved_to_path, h=240)
+        
+        df = df.resample('D').mean()
+        
+        saved_to_path = plot_n_steps_of_df(
+            df,
+            coords=coords,
+            as_delta=True,
+            title=f"{self.station.name} - Daily, delta to measurements",
+            save_to=self.temp_dir.name
+        )
+        
+        saved_to_path = plot_n_steps_of_df(
+            df,
+            coords=coords,
+            as_delta=False,
+            title=f"{self.station.name} - Daily",
+            save_to=self.temp_dir.name
+        )
+        
+        pdf.image(saved_to_path, h=240)
+        
+        df = df.resample('M').mean()
+        
+        saved_to_path = plot_n_steps_of_df(
+            df,
+            coords=coords,
+            as_delta=False,
+            title=f"{self.station.name} - Monthly",
+            save_to=self.temp_dir.name
+        )
+        
+        pdf.image(saved_to_path, h=240)
+        
+        
         pdf.output(self.get_pdf_path())
         
     def get_pdf_path(self):

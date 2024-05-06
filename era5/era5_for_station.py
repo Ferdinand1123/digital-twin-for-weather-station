@@ -37,7 +37,9 @@ class DownloadEra5ForStation(Era5Downloader):
         count = 0
         for year, months in self.years_by_month_dict.items():
             if self.progress:
-                self.progress.update_percentage(count / len(self.years_by_month_dict.items()))
+                perct = count / len(self.years_by_month_dict.items()) * 100
+                print(f"Downloading... {perct}")
+                self.progress.update_percentage(perct)
             if len(months) < 10:
                 self.hook.download_months(
                     year,
@@ -76,7 +78,7 @@ class DownloadEra5ForStationGaps(Era5Downloader):
         count = 0
         for day, hours in grouped_hours_by_day.items():
             if self.progress:
-                self.progress.update_percentage(count / len(grouped_hours_by_day.items()))
+                self.progress.update_percentage(count / len(grouped_hours_by_day.items()) * 100)
             self.hook.download_hours_on_same_day(
                 day.year,
                 day.month,
