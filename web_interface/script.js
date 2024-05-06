@@ -130,10 +130,10 @@ function update_available_datasets() {
     if (document.hidden) {
         return;
     }
-    const cookie = getUidFromCookie();
-    socket.emit('request_available_datasets', cookie);
+   // const cookie = getUidFromCookie();
+   // socket.emit('request_available_datasets', cookie);
     
-    //request_available_datasets();
+ request_available_datasets();
 }
 
 socket.on('available_datasets', data => {
