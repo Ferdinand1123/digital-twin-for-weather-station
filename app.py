@@ -12,7 +12,7 @@ from station.station import StationData
 from infilling.evaluation_executer import EvaluationExecuter
 from infilling.infilling_writer import InfillingWriter
 from train_station_twin.training_executer import TrainingExecuter
-from train_station_twin.validation_to_pdf import Validator
+from train_station_twin.validation_executer import ValidationExecuter
 from utils.utils import ProgressStatus
 
 import time
@@ -68,7 +68,7 @@ def api_fill_in_at_data_submission(uid):
         station=data_submission.station,
         plot=True
     ) 
-    
+    data_submission.add_infilling(output_path)
     response = send_file(output_path, as_attachment=True)
     
     evaluation.cleanup()
@@ -127,13 +127,14 @@ def get_pdf(uid):
         return "Data submission not found", 404
     if not data_submission.model_path:
         return "Model missing", 404
-    validation = Validator(
+    validation = ValidationExecuter(
         station=data_submission.station,
         model_path=data_submission.model_path,
         progress=data_submission.progress
     )
-    data_submission.add_pdf(validation.get_pdf_path())
-    return send_file(data_submission.pdf_path)
+    data_submission.add_val_pdf(validation.get_pdf_path())
+    data_submission.add_val_csv(validation.get_csv_path())
+    return send_file(data_submission.val_pdf_path)
 
 @app.route('/api/download-model/<uid>', methods=['GET'])
 def send_model(uid):
@@ -143,6 +144,33 @@ def send_model(uid):
     if not data_submission.model_path:
         return "Model missing", 404
     return send_file(data_submission.model_path)
+
+@app.route('/api/download-validation-pdf/<uid>', methods=['GET'])
+def send_validation_pdf(uid):
+    data_submission = data_storage.get_data_submission(uid)
+    if not data_submission:
+        return "Data submission not found", 404
+    if not data_submission.val_pdf_path:
+        return "PDF missing", 404
+    return send_file(data_submission.val_pdf_path)
+
+@app.route('/api/download-validation-csv/<uid>', methods=['GET'])
+def download_validation_csv(uid):
+    data_submission = data_storage.get_data_submission(uid)
+    if not data_submission:
+        return "Data submission not found", 404
+    if not data_submission.val_csv_path:
+        return "CSV missing", 404
+    return send_file(data_submission.val_csv_path)
+
+@app.route('/api/download-infilling/<uid>', methods=['GET'])
+def download_infilling(uid):
+    data_submission = data_storage.get_data_submission(uid)
+    if not data_submission:
+        return "Data submission not found", 404
+    if not data_submission.infilling_path:
+        return "Infilling missing", 404
+    return send_file(data_submission.infilling_path)
 
 # serve index.html and other frontend files
 @app.route('/web/<path:path>')

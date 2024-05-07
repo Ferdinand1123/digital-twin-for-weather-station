@@ -84,14 +84,14 @@ function list_available_datasets(data) {
     if (data) {
         data.forEach(dataset => {
             const listItem = document.createElement('li');
+            const listItemHead = listItem.appendChild(document.createElement('div'));
             // each list item should get a name and a button to execute fill in
-            listItem.appendChild(document.createElement('span')).textContent = dataset.name;
+            listItemHead.appendChild(document.createElement('span')).textContent = dataset.name;
             const ctaArea = listItem.appendChild(document.createElement('div'));
             ctaArea.classList.add('cta-area');
             if (dataset.status == "") {
                 if (dataset.has_model) {                
                     ctaArea.appendChild(get_fill_in_button(dataset.uid));
-                    ctaArea.appendChild(get_model_button(dataset.uid));
                     ctaArea.appendChild(get_eval_as_pdf_button(dataset.uid));
                 }
                 ctaArea.appendChild(get_train_button(dataset.uid));
@@ -99,7 +99,23 @@ function list_available_datasets(data) {
             } else {
                 ctaArea.appendChild(document.createElement('span')).textContent = dataset.status;
             }
-            listItem.appendChild(ctaArea);
+            listItemHead.appendChild(ctaArea);
+            listItem.appendChild(listItemHead);
+            const downloadArea = listItem.appendChild(document.createElement('div'));
+            downloadArea.classList.add('download-area');
+            if (dataset.has_model) {
+                downloadArea.appendChild(download_model_button(dataset.uid));
+            }
+            if (dataset.has_val_pdf) {
+                downloadArea.appendChild(download_val_pdf_button(dataset.uid));
+            }
+            if (dataset.has_val_csv) {
+                downloadArea.appendChild(download_val_csv_button(dataset.uid));
+            }
+            if (dataset.has_fill_in) {
+                downloadArea.appendChild(download_infilling_tas_button(dataset.uid));
+            }
+            listItem.appendChild(downloadArea);
             datasetList.appendChild(listItem);
         });
     }
@@ -142,22 +158,7 @@ socket.on('available_datasets', data => {
 
 function request_fill_in_for_dataset(uid) {
     fetch(`/api/fill-in/${uid}`)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        const filename = response.headers.get('content-disposition').split('filename=')[1];
-        return response.blob().then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        });
-    })
+    .then(response => download_any_file_from_response(response))
     .catch(error => {
         console.error('Error:', error)
     });
@@ -165,22 +166,7 @@ function request_fill_in_for_dataset(uid) {
 
 function request_train_for_dataset(uid, iterations) {
     fetch(`/api/train/${uid}?iterations=${iterations}`)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        const filename = response.headers.get('content-disposition').split('filename=')[1];
-        return response.blob().then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        });
-    })
+    .then(response => download_any_file_from_response(response))
     .catch(error => {
         console.error('Error:', error)
     });
@@ -203,22 +189,7 @@ function request_delete_for_dataset(uid) {
 
 function validation_to_pdf(uid) {
     fetch(`/api/validate-model/${uid}`)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        const filename = response.headers.get('content-disposition').split('filename=')[1];
-        return response.blob().then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        });
-    })
+    .then(response => download_any_file_from_response(response))
     .catch(error => {
         console.error('Error:', error)
     });
@@ -227,22 +198,31 @@ function validation_to_pdf(uid) {
 
 function download_model_of_dataset(uid) {
     fetch(`/api/download-model/${uid}`)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        const filename = response.headers.get('content-disposition').split('filename=')[1];
-        return response.blob().then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        });
-    })
+    .then(response => download_any_file_from_response(response))
+    .catch(error => {
+        console.error('Error:', error)
+    });
+}
+
+function download_validation_as_pdf(uid) {
+    fetch(`/api/download-validation-pdf/${uid}`)
+    .then(response => download_any_file_from_response(response))
+    .catch(error => {
+        console.error('Error:', error)
+    });
+}
+
+function download_validation_as_csv(uid) {
+    fetch(`/api/download-validation-csv/${uid}`)
+    .then(response => download_any_file_from_response(response))
+    .catch(error => {
+        console.error('Error:', error)
+    });
+}
+
+function download_infilling_as_tas(uid) {
+    fetch(`/api/download-infilling/${uid}`)
+    .then(response => download_any_file_from_response(response))
     .catch(error => {
         console.error('Error:', error)
     });
@@ -286,9 +266,47 @@ function get_eval_as_pdf_button(uid) {
     return pdfButton;
 }
 
-function get_model_button(uid) {
+function download_model_button(uid) {
     const modelButton = document.createElement('button');
     modelButton.textContent = 'Download model'
     modelButton.onclick = () => download_model_of_dataset(uid);
     return modelButton
+}
+
+function download_val_pdf_button(uid) {
+    const valPdfButton = document.createElement('button');
+    valPdfButton.textContent = 'Download validation as PDF'
+    valPdfButton.onclick = () => download_validation_as_pdf(uid);
+    return valPdfButton
+}
+
+function download_val_csv_button(uid) {
+    const valCsvButton = document.createElement('button');
+    valCsvButton.textContent = 'Download validation as CSV'
+    valCsvButton.onclick = () => download_validation_as_csv(uid);
+    return valCsvButton
+}
+
+function download_infilling_tas_button(uid) {
+    const infillingCsvButton = document.createElement('button');
+    infillingCsvButton.textContent = 'Download infilling (.tas)'
+    infillingCsvButton.onclick = () => download_infilling_as_tas(uid);
+    return infillingCsvButton
+}
+
+function download_any_file_from_response(response){
+    if (!response.ok) {
+        throw new Error('Network response was not ok');
+    }
+    const filename = response.headers.get('content-disposition').split('filename=')[1];
+    return response.blob().then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    });
 }

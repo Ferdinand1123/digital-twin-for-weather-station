@@ -72,6 +72,19 @@ p.label {
     margin: auto auto auto 0
 }
 
+.download-area {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 10px;
+    padding-left: 50px;
+    margin-right: auto;
+}
+
+.download-area>button {
+    margin-left: 10px;
+    margin-right: 0;
+}
+
 button {
     display: flex;
     margin-left: auto;
@@ -91,6 +104,10 @@ button:disabled {
 #dataset-list>li {
     list-style: none;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     margin: 10px 5px;
+}
+
+#dataset-list>li>div {
+    display: flex;
 }

@@ -13,7 +13,7 @@ from era5.era5_download_hook import Era5DownloadHook
 from era5.era5_from_grib_to_nc import Era5DataFromGribToNc
 from era5.era5_for_station import DownloadEra5ForStation, Era5ForStationCropper
 
-class Validator():
+class ValidationExecuter():
     
     def __init__(self, station: StationData, model_path: str, progress: ProgressStatus):
         self.station = station
@@ -103,6 +103,16 @@ class Validator():
             reconstructed_path=reconstructed_path,
             measurements_path=self.station_nc_file_path
         )
+        
+        # keep reconstructed_median and era5_nearest and measurements
+        export_df = df[["reconstructed_median", "era5_nearest", "measurements"]]
+        # rename columns
+        export_df = export_df.rename(columns={
+            "reconstructed_median": "Reconstructed",
+            "era5_nearest": "ERA5",
+            "measurements": "Measurements"
+        })
+        export_df.to_csv(self.get_csv_path(), index=True)
 
         coords = {
             "station_lon": self.station.metadata.get("longitude"),
@@ -181,5 +191,10 @@ class Validator():
         
         self.progress.update_phase("")
         
+        return self.get_pdf_path(), self.get_csv_path()
+        
     def get_pdf_path(self):
         return self.temp_dir.name + '/validation.pdf'
+    
+    def get_csv_path(self):
+        return self.temp_dir.name + '/validation.csv'
