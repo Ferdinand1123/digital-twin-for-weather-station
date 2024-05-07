@@ -289,7 +289,7 @@ function download_val_csv_button(uid) {
 
 function download_infilling_tas_button(uid) {
     const infillingCsvButton = document.createElement('button');
-    infillingCsvButton.textContent = 'Download infilling (.tas)'
+    infillingCsvButton.textContent = 'Download infilling (.dat)'
     infillingCsvButton.onclick = () => download_infilling_as_tas(uid);
     return infillingCsvButton
 }

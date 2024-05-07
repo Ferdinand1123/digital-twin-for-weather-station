@@ -124,7 +124,7 @@ class DataSubmission:
         return
         
     def add_infilling(self, infilling_source_path):
-        self.infilling_path = self.model_dir.name + "/infilled.cdv"
+        self.infilling_path = self.model_dir.name + "/infilled.dat"
         shutil.copy(infilling_source_path, self.infilling_path)
         return
     

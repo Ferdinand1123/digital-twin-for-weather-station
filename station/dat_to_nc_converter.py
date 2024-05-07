@@ -279,12 +279,11 @@ class DatToNcConverter:
         df.to_csv(dat_path, sep = seperator, index = False)
         
     def transform_df_to_tas(self, df) -> pd.DataFrame:
-        for col in df.columns:
-            if self.tas_sensor in col:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-                df[col] = df[col].round(2)
-        # set nan values to -999.99
         df = df.fillna(-999.99)
+        for col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+            precision = self.get_tas_format_config().get('digit_precision', 2)
+            df[col] = [f"{value:.{precision}f}" for value in df[col]]        # set nan values to -999.99
         print("#### after rounding ###")
         print(df.head())
         
