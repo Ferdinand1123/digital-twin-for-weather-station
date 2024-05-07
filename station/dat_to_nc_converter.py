@@ -139,6 +139,9 @@ class DatToNcConverter:
         
         # convert all 0.00 values to NaN
         df = df.replace(0.00, np.nan)
+        
+        # set values above 45 or below -45 to NaN
+        df[self.tas_sensor] = df[self.tas_sensor].apply(lambda x: x if -45 <= x <= 45 else np.nan)
 
         # set datetime column as index
         df = df.set_index("datetime")
