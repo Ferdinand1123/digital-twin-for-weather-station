@@ -17,14 +17,13 @@ class StationData:
         self.converter.transform()
         self.converter.dataframe = self.converter.dataframe[~self.converter.dataframe.index.year.isin(mask_years)]
         self.df = self.converter.dataframe
-        self.original_df = self.converter.original_df
         assert not self.df.empty, "Input Dataframe is empty"
         
     def find_gaps(self) -> None:
-        hour_steps = self.df.index
+        available_hour_steps = self.df.index
+        all_hour_steps = self.converter.original_df.index
         # find all hours between the first and last hour that are missing
-        all_hours = pd.date_range(start=hour_steps.min(), end=hour_steps.max(), freq='h')
-        missing_hours = all_hours.difference(hour_steps)
+        missing_hours = all_hour_steps.difference(available_hour_steps)
         return missing_hours.tolist()
     
     def get_all_months_in_df(self) -> None:

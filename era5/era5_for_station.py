@@ -34,24 +34,27 @@ class DownloadEra5ForStation(Era5Downloader):
         self.execute()
         
     def download(self):
-        count = 0
+        perct = 0
         for year, months in self.years_by_month_dict.items():
+            print("##### len ", len(self.years_by_month_dict.items()))
             if self.progress:
-                perct = count / len(self.years_by_month_dict.items()) * 100
                 print(f"Downloading... {perct}")
-                self.progress.update_percentage(perct)
             if len(months) < 10:
-                self.hook.download_months(
-                    year,
-                    months,
-                    self.grib_dir_path
-                )
+                for month in months:
+                    self.hook.download_month(
+                        year,
+                        month,
+                        self.grib_dir_path
+                    )
+                    perct += 1 / len(self.years_by_month_dict.items()) * 100 / len(months)
+                    self.progress.update_percentage(perct)
             else:
                 self.hook.download_year(
                     year,
                     self.grib_dir_path
-                )
-            count += 1
+                )                
+                perct += 1 / len(self.years_by_month_dict.items()) * 100
+                self.progress.update_percentage(perct)
                 
                 
             

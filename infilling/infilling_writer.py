@@ -18,8 +18,9 @@ class InfillingWriter():
         
         xarray = xr.open_dataset(eval_results_path)
         tas_values = xarray["tas"].values[:].mean(axis=(1,2))
+        tas_values = tas_values - 273.15
         hours = xarray.time.values
-        df = pd.DataFrame(data={"tas": tas_values}, index=hours)
+        df = pd.DataFrame(data={f"filled_{station.converter.tas_sensor}": tas_values}, index=hours)
         
         #sort the dataframe by index
         df = df.sort_index()
@@ -28,16 +29,23 @@ class InfillingWriter():
         
         if plot:
             self.plotter.pass_data(
-                input_df=station.original_df,
-                output_df=df
+                input_df=station.converter.original_df,
+                output_df=df,
+                sensor_name=station.converter.tas_sensor
             )
             uid = str(uuid.uuid4())
             plot_path = self.temp_dir.name + "/" + uid + ".png"
             self.plotter.plot(path=plot_path)
             
         
-        filled_in_df = station.original_df.copy()
+        filled_in_df = station.converter.original_df.copy()
+        filled_in_df[f"filled_{station.converter.tas_sensor}"] = None
         filled_in_df.update(df)
+        print(filled_in_df.columns)
+        # where the original data is missing, fill in the infilled data
+        filled_in_df[f"combined_{station.converter.tas_sensor}"] = \
+            filled_in_df[f"{station.converter.tas_sensor}"].combine_first(
+                filled_in_df[f"filled_{station.converter.tas_sensor}"])
 
         filled_df_in_original_format = station.converter.transform_df_to_tas(
             filled_in_df

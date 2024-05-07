@@ -10,13 +10,14 @@ class InfillingPlotter():
         self.input_df = None
         self.output_df = None
         self.full_df = None
+        self.sensor_name = None
     
-    def pass_data(self, input_df, output_df):
+    def pass_data(self, input_df, output_df, sensor_name):
         self.input_df = input_df
         self.output_df = output_df
+        self.sensor_name = sensor_name
         # rename the columns to measured and reconstructed
-        self.input_df = self.input_df.rename(columns={"tas": "Measured"})
-        self.output_df = self.output_df.rename(columns={"tas": "Reconstructed"})
+        self.output_df = self.output_df.rename(columns={f"filled_{self.sensor_name}": "Reconstructed"})
     
     def _transform_df(self):
         self.full_df = self.input_df.join(self.output_df, how="outer")
@@ -25,14 +26,14 @@ class InfillingPlotter():
         self.full_df = self.full_df.sort_index()
         
         # transfer from K to C
-        self.full_df["Measured"] = self.full_df["Measured"] - 273.15
+        self.full_df[self.sensor_name] = self.full_df[self.sensor_name] - 273.15
         self.full_df["Reconstructed"] = self.full_df["Reconstructed"] - 273.15
     
     def plot(self, path):
         self._transform_df()
         assert not self.full_df.empty, "Dataframe is empty"
         
-        plt.plot(self.full_df.index, self.full_df["Measured"], label="Measured")
+        plt.plot(self.full_df.index, self.full_df[self.sensor_name], label="Measurements")
         plt.plot(self.full_df.index, self.full_df["Reconstructed"], label="Reconstructed")
         
         plt.legend()

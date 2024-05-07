@@ -179,7 +179,10 @@ class DatToNcConverter:
 
     def transform(self):
         if self.keep_original:
-            self.original_df = self.dataframe
+            self.original_df = self.dataframe.drop(columns = ["tas"])
+            self.original_df = self.original_df.reindex(
+                pd.date_range(start = self.dataframe.index.min(), end = self.dataframe.index.max(), freq = "h"))
+
         
         # interesting columns in dataframe
         mapping = {
@@ -200,7 +203,7 @@ class DatToNcConverter:
 
         # rename columns
         self.dataframe = self.dataframe.rename(columns = mapping)
-
+        
     
     def load(self, location):
         if self.hourly:
@@ -253,22 +256,34 @@ class DatToNcConverter:
             location = self.target_directory
         self.load(location)
         
-    def export_a_df_to_tas(self, df, tas_path):
-        # export df in csv format to tas_path
+    def export_a_df_to_tas(self, df, dat_path):
+        # export df in csv format to dat_path
         seperator = self.get_tas_format_config().get("seperator", "\s+")
         if seperator == "\s+":
             seperator = " "
-        df.to_csv(tas_path, sep = seperator)
+        # add year mon day hour min columns
+        df["year"] = df.index.year
+        df["mon"] = df.index.month
+        df["day"] = df.index.day
+        df["hour"] = df.index.hour
+        # drop column that was used as index
+        df = df.reset_index(drop = True)
+        # bring year mon day hour min columns to the front
+        df = df[["year", "mon", "day", "hour"] + [
+            col for col in df.columns if col not in ["year", "mon", "day", "hour"]
+        ]]
+        df.to_csv(dat_path, sep = seperator, index = False)
         
     def transform_df_to_tas(self, df) -> pd.DataFrame:
-        # drop sensor column and then renamce tas column to sensor
-        df = df.drop(columns = [self.tas_sensor])
-        df = df.rename(columns = {"tas": self.tas_sensor})
-        # convert adjusted column back from K to C
-        df[self.tas_sensor] = df[self.tas_sensor] - 273.15
-        df = df.round(self.get_tas_format_config().get("digit_precision", 2))
+        for col in df.columns:
+            if self.tas_sensor in col:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+                df[col] = df[col].round(2)
         # set nan values to -999.99
         df = df.fillna(-999.99)
+        print("#### after rounding ###")
+        print(df.head())
+        
         return df
         
         
