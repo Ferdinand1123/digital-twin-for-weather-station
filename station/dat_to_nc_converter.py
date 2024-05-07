@@ -266,11 +266,12 @@ class DatToNcConverter:
         df["mon"] = df.index.month
         df["day"] = df.index.day
         df["hour"] = df.index.hour
+        df["min"] = df.index.minute
         # drop column that was used as index
         df = df.reset_index(drop = True)
         # bring year mon day hour min columns to the front
-        df = df[["year", "mon", "day", "hour"] + [
-            col for col in df.columns if col not in ["year", "mon", "day", "hour"]
+        df = df[["year", "mon", "day", "hour", "min"] + [
+            col for col in df.columns if col not in ["year", "mon", "day", "hour", "min"]
         ]]
         df.to_csv(dat_path, sep = seperator, index = False)
         
