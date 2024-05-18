@@ -56,6 +56,12 @@ function submitForm() {
 
     // append cookie to form data
     formData.append('cookie', getUidFromCookie());
+    
+    // append name if given
+    const name = document.getElementById('station-name').value;
+    if (name) {
+        formData.append('name', name);
+    }
 
     fetch('/api/data-submission', {
         method: 'POST',
@@ -106,11 +112,10 @@ function list_available_datasets(data) {
             if (dataset.has_model) {
                 downloadArea.appendChild(download_model_button(dataset.uid));
             }
-            if (dataset.has_val_pdf) {
+            if (dataset.has_val) {
                 downloadArea.appendChild(download_val_pdf_button(dataset.uid));
-            }
-            if (dataset.has_val_csv) {
                 downloadArea.appendChild(download_val_csv_button(dataset.uid));
+                downloadArea.appendChild(download_val_zip_button(dataset.uid));
             }
             if (dataset.has_fill_in) {
                 downloadArea.appendChild(download_infilling_tas_button(dataset.uid));
@@ -228,6 +233,14 @@ function download_infilling_as_tas(uid) {
     });
 }
 
+function download_validation_as_zip(uid) {
+    fetch(`/api/download-validation-zip/${uid}`)
+    .then(response => download_any_file_from_response(response))
+    .catch(error => {
+        console.error('Error:', error)
+    });
+}
+
 function get_fill_in_button(uid) {
     const fillInButton = document.createElement('button');
     fillInButton.textContent = 'Fill in';
@@ -287,12 +300,20 @@ function download_val_csv_button(uid) {
     return valCsvButton
 }
 
+function download_val_zip_button(uid) {
+    const valZipButton = document.createElement('button');
+    valZipButton.textContent = 'Download validation as ZIP'
+    valZipButton.onclick = () => download_validation_as_zip(uid);
+    return valZipButton
+}
+
 function download_infilling_tas_button(uid) {
     const infillingCsvButton = document.createElement('button');
     infillingCsvButton.textContent = 'Download infilling (.dat)'
     infillingCsvButton.onclick = () => download_infilling_as_tas(uid);
     return infillingCsvButton
 }
+
 
 function download_any_file_from_response(response){
     if (!response.ok) {

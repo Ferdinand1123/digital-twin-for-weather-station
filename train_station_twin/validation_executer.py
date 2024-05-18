@@ -198,3 +198,13 @@ class ValidationExecuter():
     
     def get_csv_path(self):
         return self.temp_dir.name + '/validation.csv'
+    
+    def make_zip(self):
+        # archive all files in the temp dir to a zip file that have the file extension .png, .pdf or .csv
+        zip_path = self.temp_dir.name + '/validation.zip'
+        with zipfile.ZipFile(zip_path, 'w') as zipf:
+            for root, _, files in os.walk(self.temp_dir.name):
+                for file in files:
+                    if file.endswith('.png') or file.endswith('.pdf') or file.endswith('.csv'):
+                        zipf.write(os.path.join(root, file), file)
+        return zip_path

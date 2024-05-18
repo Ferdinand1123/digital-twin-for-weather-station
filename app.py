@@ -39,7 +39,8 @@ def data_submission_api_point():
     uploaded_files =  request.files.getlist('measurements')
     model_file = request.files.get('model')
     cookie = request.form.get('cookie')
-    data_submission = DataSubmission(cookie=cookie)
+    name = request.form.get('name')
+    data_submission = DataSubmission(cookie=cookie, name=name)
     data_submission.submit(uploaded_files, model_file)
     name = data_submission.name
     uid =  data_storage.add_data_submission(data_submission)
@@ -134,6 +135,7 @@ def get_pdf(uid):
     )
     data_submission.add_val_pdf(validation.get_pdf_path())
     data_submission.add_val_csv(validation.get_csv_path())
+    data_submission.add_val_zip(validation.make_zip())
     return send_file(data_submission.val_pdf_path)
 
 @app.route('/api/download-model/<uid>', methods=['GET'])
@@ -162,6 +164,15 @@ def download_validation_csv(uid):
     if not data_submission.val_csv_path:
         return "CSV missing", 404
     return send_file(data_submission.val_csv_path)
+
+@app.route('/api/download-validation-zip/<uid>', methods=['GET'])
+def download_validation_zip(uid):
+    data_submission = data_storage.get_data_submission(uid)
+    if not data_submission:
+        return "Data submission not found", 404
+    if not data_submission.val_zip_path:
+        return "ZIP missing", 404
+    return send_file(data_submission.val_zip_path)
 
 @app.route('/api/download-infilling/<uid>', methods=['GET'])
 def download_infilling(uid):
