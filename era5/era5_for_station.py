@@ -36,9 +36,7 @@ class DownloadEra5ForStation(Era5Downloader):
     def download(self):
         perct = 0
         for year, months in self.years_by_month_dict.items():
-            print("##### len ", len(self.years_by_month_dict.items()))
-            if self.progress:
-                print(f"Downloading... {perct}")
+            print(f"Downloading... {year}")
             if len(months) < 10:
                 for month in months:
                     self.hook.download_month(

@@ -1,5 +1,7 @@
 import pandas as pd
 
+from matplotlib import pyplot as plt
+
 from station.dat_to_nc_converter import DatToNcConverter
 
 class StationData:
@@ -15,8 +17,37 @@ class StationData:
         self.metadata = self.converter.meta_data
         self.converter.extract(first_n_files=first_n_files, progress=progress)
         self.converter.transform()
-        self.converter.dataframe = self.converter.dataframe[~self.converter.dataframe.index.year.isin(mask_years)]
+        
+        
         self.df = self.converter.dataframe
+        
+        # plot self.converter.dataframe tas column
+        # add nan values in gaps to avoid plotting lines
+        self.plot_df = self.df.copy()
+        self.plot_df.reindex(pd.date_range(start=self.plot_df.index.min(),
+                                           end=self.plot_df.index.max(),
+                                           freq='H'))
+        
+        plt.plot(self.plot_df.index, self.plot_df["tas"], label="Available measurements")
+        plt.xlabel("Time")
+        plt.ylabel("Temperature (K)")
+        
+        self.df = self.df[~self.df.index.year.isin(mask_years)]
+        self.plot_df = self.df.copy()
+        self.plot_df.reindex(pd.date_range(start=self.plot_df.index.min(),
+                                           end=self.plot_df.index.max(),
+                                           freq='H'))
+        plt.plot(self.plot_df.index, self.plot_df["tas"], label="Measurements used for training")
+        
+        # fig size
+        plt.figure(figsize=(20, 10))
+        
+        # position legend outside of plot
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        
+        
+        plt.show()
+        
         assert not self.df.empty, "Input Dataframe is empty"
         
     def find_gaps(self) -> None:
