@@ -139,6 +139,9 @@ class DatToNcConverter:
         
         # convert all 0.00 values to NaN
         df = df.replace(0.00, np.nan)
+        
+        # set values above 45 or below -45 to NaN
+        df[self.tas_sensor] = df[self.tas_sensor].apply(lambda x: x if -45 <= x <= 45 else np.nan)
 
         # set datetime column as index
         df = df.set_index("datetime")
@@ -153,10 +156,13 @@ class DatToNcConverter:
 
         def custom_aggregation(series):
             # If all values are the same or NaN, return NaN; otherwise, return the mean
-            if series.nunique() <= 2:
+            if series.nunique() <= 3:
+                return np.nan
+            # if in more than 20 min of that hour, the sensor was not working, return NaN
+            elif series.isna().sum() > 20:
                 return np.nan
             else:
-                return np.median(series)
+                return np.nanmedian(series)
 
         if self.hourly:
             # merge all minutely data into one row using the mean
@@ -179,7 +185,10 @@ class DatToNcConverter:
 
     def transform(self):
         if self.keep_original:
-            self.original_df = self.dataframe
+            self.original_df = self.dataframe.drop(columns = ["tas"])
+            self.original_df = self.original_df.reindex(
+                pd.date_range(start = self.dataframe.index.min(), end = self.dataframe.index.max(), freq = "h"))
+
         
         # interesting columns in dataframe
         mapping = {
@@ -200,7 +209,7 @@ class DatToNcConverter:
 
         # rename columns
         self.dataframe = self.dataframe.rename(columns = mapping)
-
+        
     
     def load(self, location):
         if self.hourly:
@@ -253,22 +262,34 @@ class DatToNcConverter:
             location = self.target_directory
         self.load(location)
         
-    def export_a_df_to_tas(self, df, tas_path):
-        # export df in csv format to tas_path
+    def export_a_df_to_tas(self, df, dat_path):
+        # export df in csv format to dat_path
         seperator = self.get_tas_format_config().get("seperator", "\s+")
         if seperator == "\s+":
             seperator = " "
-        df.to_csv(tas_path, sep = seperator)
+        # add year mon day hour min columns
+        df["year"] = df.index.year
+        df["mon"] = df.index.month
+        df["day"] = df.index.day
+        df["hour"] = df.index.hour
+        df["min"] = df.index.minute
+        # drop column that was used as index
+        df = df.reset_index(drop = True)
+        # bring year mon day hour min columns to the front
+        df = df[["year", "mon", "day", "hour", "min"] + [
+            col for col in df.columns if col not in ["year", "mon", "day", "hour", "min"]
+        ]]
+        df.to_csv(dat_path, sep = seperator, index = False)
         
     def transform_df_to_tas(self, df) -> pd.DataFrame:
-        # drop sensor column and then renamce tas column to sensor
-        df = df.drop(columns = [self.tas_sensor])
-        df = df.rename(columns = {"tas": self.tas_sensor})
-        # convert adjusted column back from K to C
-        df[self.tas_sensor] = df[self.tas_sensor] - 273.15
-        df = df.round(self.get_tas_format_config().get("digit_precision", 2))
-        # set nan values to -999.99
         df = df.fillna(-999.99)
+        for col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+            precision = self.get_tas_format_config().get('digit_precision', 2)
+            df[col] = [f"{value:.{precision}f}" for value in df[col]]        # set nan values to -999.99
+        print("#### after rounding ###")
+        print(df.head())
+        
         return df
         
         

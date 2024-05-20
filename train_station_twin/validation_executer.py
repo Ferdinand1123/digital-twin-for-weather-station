@@ -13,7 +13,7 @@ from era5.era5_download_hook import Era5DownloadHook
 from era5.era5_from_grib_to_nc import Era5DataFromGribToNc
 from era5.era5_for_station import DownloadEra5ForStation, Era5ForStationCropper
 
-class Validator():
+class ValidationExecuter():
     
     def __init__(self, station: StationData, model_path: str, progress: ProgressStatus):
         self.station = station
@@ -103,6 +103,16 @@ class Validator():
             reconstructed_path=reconstructed_path,
             measurements_path=self.station_nc_file_path
         )
+        
+        # keep reconstructed_median and era5_nearest and measurements
+        export_df = df[["reconstructed_median", "era5_nearest", "measurements"]]
+        # rename columns
+        export_df = export_df.rename(columns={
+            "reconstructed_median": "Reconstructed",
+            "era5_nearest": "ERA5",
+            "measurements": "Measurements"
+        })
+        export_df.to_csv(self.get_csv_path(), index=True)
 
         coords = {
             "station_lon": self.station.metadata.get("longitude"),
@@ -181,5 +191,20 @@ class Validator():
         
         self.progress.update_phase("")
         
+        return self.get_pdf_path(), self.get_csv_path()
+        
     def get_pdf_path(self):
         return self.temp_dir.name + '/validation.pdf'
+    
+    def get_csv_path(self):
+        return self.temp_dir.name + '/validation.csv'
+    
+    def make_zip(self):
+        # archive all files in the temp dir to a zip file that have the file extension .png, .pdf or .csv
+        zip_path = self.temp_dir.name + '/validation.zip'
+        with zipfile.ZipFile(zip_path, 'w') as zipf:
+            for root, _, files in os.walk(self.temp_dir.name):
+                for file in files:
+                    if file.endswith('.png') or file.endswith('.pdf') or file.endswith('.csv'):
+                        zipf.write(os.path.join(root, file), file)
+        return zip_path

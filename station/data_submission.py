@@ -18,7 +18,10 @@ class DataSubmission:
         self.measurement_dir_path = self.measurement_dir.name # such that someone can create a DataSubmission without submit function and instead by adding the folder manually
         self.model_dir = tempfile.TemporaryDirectory()
         self.model_path = None
-        self.pdf_path = None
+        self.val_pdf_path = None
+        self.val_csv_path = None
+        self.val_zip_path = None
+        self.infilling_path = None
         self.name = name
         self.cookie = cookie
         self.progress = ProgressStatus()
@@ -111,12 +114,26 @@ class DataSubmission:
         self.generate_name()
         return
     
-    def add_pdf(self, pdf_source_path):
-        self.pdf_path = self.model_dir.name + "/eval.pdf"
-        shutil.copy(pdf_source_path, self.pdf_path)
+    def add_val_pdf(self, pdf_source_path):
+        self.val_pdf_path = self.model_dir.name + "/eval.pdf"
+        shutil.copy(pdf_source_path, self.val_pdf_path)
         return
     
+    def add_val_csv(self, csv_source_path):
+        self.val_csv_path = self.model_dir.name + "/eval.csv"
+        shutil.copy(csv_source_path, self.val_csv_path)
+        return
+    
+    def add_val_zip(self, zip_source_path):
+        self.val_zip_path = self.model_dir.name + "/eval.zip"
+        shutil.copy(zip_source_path, self.val_zip_path)
+        return
         
+    def add_infilling(self, infilling_source_path):
+        self.infilling_path = self.model_dir.name + "/infilled.dat"
+        shutil.copy(infilling_source_path, self.infilling_path)
+        return
+    
     def cleanup(self):
         # Clean up the temporary directories
         if self.measurement_dir:
@@ -143,6 +160,7 @@ class DataStorage:
             "name": data.name,
             "uid": uid,
             "has_model": data.model_path is not None,
+            "has_val": data.val_pdf_path and data.val_csv_path and data.val_zip_path,
             "status": str(data.progress)
         } for uid, data in self._data_submissions.items() if data.cookie == cookie]
         return return_list
