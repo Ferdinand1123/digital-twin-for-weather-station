@@ -1,5 +1,7 @@
 import pandas as pd
 
+from matplotlib import pyplot as plt
+
 from station.dat_to_nc_converter import DatToNcConverter
 
 class StationData:
@@ -15,8 +17,55 @@ class StationData:
         self.metadata = self.converter.meta_data
         self.converter.extract(first_n_files=first_n_files, progress=progress)
         self.converter.transform()
+        
+        df = self.converter.dataframe
+        plot_df = df.reindex(pd.date_range(start=df.index.min(),
+                                           end=df.index.max(),
+                                           freq='H'))
+        
+        plt.plot(plot_df.index, plot_df["tas"], label="Measurements excluded in training")
+        
         self.converter.dataframe = self.converter.dataframe[~self.converter.dataframe.index.year.isin(mask_years)]
         self.df = self.converter.dataframe
+        df = self.df.copy()
+        plot_df = df.reindex(pd.date_range(start=df.index.min(),
+                                           end=df.index.max(),                                          
+                                           freq='H'))
+        
+        plt.plot(plot_df.index, plot_df["tas"], label="Measurements used for training")
+        
+        # set title
+        if len(mask_years) > 0:
+            plt.title(f"Measured by {self.name}-Station with {', '.join(map(str, mask_years))} masked out @ {self.metadata.get('latitude')}lat," + \
+                        f"{self.metadata.get('longitude')}lon")
+        else:
+            plt.title(f"Measured by {self.name}-Station @ {self.metadata.get('latitude')}lat," + \
+                        f"{self.metadata.get('longitude')}lon")
+        
+        # rotate x-axis labels
+        plt.xticks(rotation=45)
+        
+        # set y-axis label
+        plt.ylabel("Temperature [K]")
+        
+        # position legend to the top right above/outside the plot
+        plt.legend(loc='upper right', bbox_to_anchor=(1, 1.125))
+        
+        # font size of legend
+        plt.rcParams.update({'font.size': 10})
+    
+        # font size of axis labels
+        plt.rcParams.update({'axes.labelsize': 12})
+        
+        # font size of title
+        plt.rcParams.update({'axes.titlesize': 16})
+        
+        # fig size
+        plt.gcf().set_size_inches(20, 10)
+        
+        plt.show()
+  
+        
         assert not self.df.empty, "Input Dataframe is empty"
         
     def find_gaps(self) -> None:

@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import xarray as xr
 import utils.utils as utils
+import os
 
 def era5_vs_reconstructed_comparision_to_df(era5_path, reconstructed_path, measurements_path):
     
@@ -120,7 +121,7 @@ def plot_n_steps_of_df(df, coords, as_delta, n=None, title=None, save_to=False):
     plt.rcParams.update({'axes.labelsize': 12})
     
     # font size of title
-    plt.rcParams.update({'axes.titlesize': 26})
+    plt.rcParams.update({'axes.titlesize': 16})
 
     
     plt.legend(bbox_to_anchor=(1, 1.15), loc='upper right', borderaxespad=0.)
@@ -146,6 +147,10 @@ def plot_n_steps_of_df(df, coords, as_delta, n=None, title=None, save_to=False):
     
     if save_to:
         path = save_to + "/" + title + ".png"
+        i = 1
+        while os.path.exists(path):
+            path = path[:-4] + f"_{i}.png"
+            i += 1
         plt.savefig(path)
         plt.close()
         return path
