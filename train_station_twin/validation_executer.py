@@ -2,6 +2,7 @@ from fpdf import FPDF
 import os
 import shutil
 import tempfile
+from zipfile import ZipFile
 import xarray as xr
 from infilling.evaluation_executer import EvaluationExecuter
 
@@ -164,11 +165,13 @@ class ValidationExecuter():
             save_to=self.temp_dir.name
         )
         
+        pdf.image(saved_to_path, h=240)
+        
         saved_to_path = plot_n_steps_of_df(
             df,
             coords=coords,
             as_delta=False,
-            title=f"{self.station.name} - Daily",
+            title=f"{self.station.name} - Daily mean",
             save_to=self.temp_dir.name
         )
         
@@ -180,7 +183,7 @@ class ValidationExecuter():
             df,
             coords=coords,
             as_delta=False,
-            title=f"{self.station.name} - Monthly",
+            title=f"{self.station.name} - Monthly mean",
             save_to=self.temp_dir.name
         )
         
@@ -202,7 +205,7 @@ class ValidationExecuter():
     def make_zip(self):
         # archive all files in the temp dir to a zip file that have the file extension .png, .pdf or .csv
         zip_path = self.temp_dir.name + '/validation.zip'
-        with zipfile.ZipFile(zip_path, 'w') as zipf:
+        with ZipFile(zip_path, 'w') as zipf:
             for root, _, files in os.walk(self.temp_dir.name):
                 for file in files:
                     if file.endswith('.png') or file.endswith('.pdf') or file.endswith('.csv'):
