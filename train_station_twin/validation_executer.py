@@ -165,11 +165,13 @@ class ValidationExecuter():
             save_to=self.temp_dir.name
         )
         
+        pdf.image(saved_to_path, h=240)
+        
         saved_to_path = plot_n_steps_of_df(
             df,
             coords=coords,
             as_delta=False,
-            title=f"{self.station.name} - Daily",
+            title=f"{self.station.name} - Daily mean",
             save_to=self.temp_dir.name
         )
         
@@ -181,7 +183,7 @@ class ValidationExecuter():
             df,
             coords=coords,
             as_delta=False,
-            title=f"{self.station.name} - Monthly",
+            title=f"{self.station.name} - Monthly mean",
             save_to=self.temp_dir.name
         )
         
