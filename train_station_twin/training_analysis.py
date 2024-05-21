@@ -120,7 +120,7 @@ def plot_n_steps_of_df(df, coords, as_delta, n=None, title=None, save_to=False):
     plt.rcParams.update({'axes.labelsize': 12})
     
     # font size of title
-    plt.rcParams.update({'axes.titlesize': 26})
+    plt.rcParams.update({'axes.titlesize': 16})
 
     
     plt.legend(bbox_to_anchor=(1, 1.15), loc='upper right', borderaxespad=0.)
