@@ -149,7 +149,7 @@ class ValidationExecuter():
                 coords=coords,
                 as_delta=False,
                 n=168,
-                title=f"{self.station.name}, Random 7 Days ({_})",
+                title=f"{self.station.name}, 7 Day Period",
                 save_to=self.temp_dir.name
             )
             pdf.image(saved_to_path, h=240)
