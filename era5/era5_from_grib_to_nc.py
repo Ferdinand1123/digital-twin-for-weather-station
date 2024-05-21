@@ -10,7 +10,7 @@ class Era5DataFromGribToNc:
             self.temp_dir_path = self.temp_dir.name
             self._convert(folder_path)
             self._merge(era5_target_file_path)
-            self.temp_dir.cleanup()
+         #   self.temp_dir.cleanup()
 
     def _convert(self, source_path):
         assert os.path.exists(source_path), "Folder with .grib files does not exist"

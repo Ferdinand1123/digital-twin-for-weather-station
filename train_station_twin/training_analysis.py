@@ -157,4 +157,3 @@ def plot_n_steps_of_df(df, coords, as_delta, n=None, title=None, save_to=False):
     else:
         plt.close()
         return None
-
