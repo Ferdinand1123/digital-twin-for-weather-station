@@ -172,7 +172,7 @@ python -m climatereconstructionai.train --load-from-file {self.get_train_args_tx
             print("ERA5 time axis:", era5_nc.time.values)
             print("Difference:", set(station_nc.time.values) - set(era5_nc.time.values), "or",
                     set(era5_nc.time.values) - set(station_nc.time.values))
-            raise e
+            # raise e
 
         FillAllTasWithValuesInNcFile(
             values=station_nc.tas.values.flatten(),

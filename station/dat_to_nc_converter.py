@@ -156,10 +156,13 @@ class DatToNcConverter:
 
         def custom_aggregation(series):
             # If all values are the same or NaN, return NaN; otherwise, return the mean
-            if series.nunique() <= 2:
+            if series.nunique() <= 3:
+                return np.nan
+            # if in more than 20 min of that hour, the sensor was not working, return NaN
+            elif series.isna().sum() > 20:
                 return np.nan
             else:
-                return np.median(series)
+                return np.nanmedian(series)
 
         if self.hourly:
             # merge all minutely data into one row using the mean

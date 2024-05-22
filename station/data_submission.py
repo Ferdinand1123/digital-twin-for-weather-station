@@ -20,6 +20,7 @@ class DataSubmission:
         self.model_path = None
         self.val_pdf_path = None
         self.val_csv_path = None
+        self.val_zip_path = None
         self.infilling_path = None
         self.name = name
         self.cookie = cookie
@@ -122,6 +123,11 @@ class DataSubmission:
         self.val_csv_path = self.model_dir.name + "/eval.csv"
         shutil.copy(csv_source_path, self.val_csv_path)
         return
+    
+    def add_val_zip(self, zip_source_path):
+        self.val_zip_path = self.model_dir.name + "/eval.zip"
+        shutil.copy(zip_source_path, self.val_zip_path)
+        return
         
     def add_infilling(self, infilling_source_path):
         self.infilling_path = self.model_dir.name + "/infilled.dat"
@@ -154,9 +160,7 @@ class DataStorage:
             "name": data.name,
             "uid": uid,
             "has_model": data.model_path is not None,
-            "has_val_pdf": data.val_pdf_path is not None,
-            "has_val_csv": data.val_csv_path is not None,
-            "has_fill_in": data.infilling_path is not None,
+            "has_val": data.val_pdf_path and data.val_csv_path and data.val_zip_path,
             "status": str(data.progress)
         } for uid, data in self._data_submissions.items() if data.cookie == cookie]
         return return_list
