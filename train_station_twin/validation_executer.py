@@ -154,6 +154,17 @@ class ValidationExecuter():
                 save_to=self.temp_dir.name
             )
             pdf.image(saved_to_path, h=240)
+            
+        diurnal_df = df.groupby(df.index.hour).mean()
+        saved_to_path = plot_n_steps_of_df(
+            diurnal_df,
+            coords=coords,
+            as_delta=False,
+            title=f"{self.station.name}, Average Diurnal Cycle",
+            save_to=self.temp_dir.name
+        )
+        
+        pdf.image(saved_to_path, h=240)
         
         df = df.resample('D').mean()
         
@@ -161,7 +172,7 @@ class ValidationExecuter():
             df,
             coords=coords,
             as_delta=True,
-            title=f"{self.station.name} - Daily, delta to measurements",
+            title=f"{self.station.name} - Daily mean, delta to measurements",
             save_to=self.temp_dir.name
         )
         
