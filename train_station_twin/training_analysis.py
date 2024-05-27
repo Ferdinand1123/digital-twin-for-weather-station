@@ -47,8 +47,8 @@ def era5_vs_reconstructed_comparision_to_df(era5_path, reconstructed_path, measu
     return df
 
 def plot_n_steps_of_df(df, coords, as_delta, n=None, title=None, save_to=False):
-    station_lon = coords.get("station_lon")
-    station_lat = coords.get("station_lat")
+    station_lon = coords.get("station_lon") % 360
+    station_lat = coords.get("station_lat") % 360
     era5_lons = coords.get("era5_lons")
     era5_lats = coords.get("era5_lats")
     
@@ -100,7 +100,7 @@ def plot_n_steps_of_df(df, coords, as_delta, n=None, title=None, save_to=False):
         station_lon=station_lon, station_lat=station_lat
     )
     
-    plt.plot(time, era5_nearest_values[time_slice], label=f"ERA5 nearest point ({pretty_lat(era5_lats[nearest_lat_idx])}, {pretty_lon(era5_lons[nearest_lon_idx])})",
+    plt.plot(time, era5_nearest_values[time_slice], label=f"ERA5 nearest point ({pretty_lat(era5_lats[nearest_lat_idx], 4)}, {pretty_lon(era5_lons[nearest_lon_idx], 4)})",
              color="red")
     # plt.plot(time, era5_mid_values[time_slice], label="ERA5 nearest 4 points")
     

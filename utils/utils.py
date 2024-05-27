@@ -133,17 +133,19 @@ def plot_n_steps_of_area_from_nc_file(path, n=1, vars="tas", title="", vmin=None
     return time_index_list
 
 
-def pretty_lat(lat):
-    lat = round(lat, 3)
+def pretty_lat(lat, precision=0):
+    lat = round(lat, max(3, precision))
     if lat > 0:
         return f"{abs(lat)}°N"
     else:
         return f"{abs(lat)}°S"
 
 
-def pretty_lon(lon):
+def pretty_lon(lon, precision=0):
+    print("displaying lon:", lon)
     lon = (lon + 180) % 360 - 180
-    lon = round(lon, 3)
+    lon = round(lon, max(3, precision))
+    print("as", lon)
     if lon > 0:
         return f"{abs(lon)}°E"
     else:
@@ -151,10 +153,12 @@ def pretty_lon(lon):
 
 
 def find_nearest_lon_lat(asc_lon_list, desc_lat_list, station_lon, station_lat):
+    print("search:", station_lon , " in asc_lon_list:", asc_lon_list)
     lat_nearest_idx = np.searchsorted(
         list(reversed(desc_lat_list)), station_lat)
     lat_nearest_idx = len(desc_lat_list) - lat_nearest_idx
     lon_nearest_idx = np.searchsorted(asc_lon_list, station_lon)
+    print("returning:", lon_nearest_idx)
     return lon_nearest_idx, lat_nearest_idx
 
 def plot_measurements_df(df):

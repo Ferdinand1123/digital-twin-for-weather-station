@@ -80,7 +80,7 @@ class DownloadEra5ForStationGaps(Era5Downloader):
         for day, hours in grouped_hours_by_day.items():
             if self.progress:
                 self.progress.update_percentage(count / len(grouped_hours_by_day.items()) * 100)
-            self.hook.download_hours_on_same_day(
+            self.hook.download_hours_in_same_day(
                 day.year,
                 day.month,
                 day.day,
