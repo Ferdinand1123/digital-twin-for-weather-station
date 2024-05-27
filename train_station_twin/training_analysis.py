@@ -5,6 +5,8 @@ import xarray as xr
 import utils.utils as utils
 import os
 
+from utils.utils import pretty_lat, pretty_lon
+
 def era5_vs_reconstructed_comparision_to_df(era5_path, reconstructed_path, measurements_path):
     
     era5_data = xr.open_dataset(era5_path)
@@ -98,7 +100,7 @@ def plot_n_steps_of_df(df, coords, as_delta, n=None, title=None, save_to=False):
         station_lon=station_lon, station_lat=station_lat
     )
     
-    plt.plot(time, era5_nearest_values[time_slice], label=f"ERA5 nearest point (lon: {(era5_lons[nearest_lon_idx] - 360):.3f}, lat: {era5_lats[nearest_lat_idx]:.3f})",
+    plt.plot(time, era5_nearest_values[time_slice], label=f"ERA5 nearest point ({pretty_lat(era5_lats[nearest_lat_idx])}, {pretty_lon(era5_lons[nearest_lon_idx])})",
              color="red")
     # plt.plot(time, era5_mid_values[time_slice], label="ERA5 nearest 4 points")
     

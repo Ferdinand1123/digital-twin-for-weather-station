@@ -48,7 +48,7 @@ class Era5DataFromGribToNc:
         for file in os.listdir(self.temp_dir_path):
             if file.endswith(".nc"):
                 print(f"Found {file}")
-        cdo_command = f"cdo cat {self.temp_dir_path}/*.nc {era5_file_path}"
+        cdo_command = f"cdo mergetime {self.temp_dir_path}/*.nc {era5_file_path}"
         
         subprocess.run(cdo_command, shell=True)
         assert os.path.exists(era5_file_path), "Merging failed"

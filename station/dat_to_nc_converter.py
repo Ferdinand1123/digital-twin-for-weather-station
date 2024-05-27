@@ -213,7 +213,7 @@ class DatToNcConverter:
     
     def load(self, location):
         if self.hourly:
-            print(self.dataframe["tas"].values.shape)
+            print(self.dataframe["tas"].values.shape, "hourly temperature values in dataframe")
             ds = xr.Dataset(
                 {
                     "tas": (["time", "lat", "lon"], self.dataframe["tas"].values.reshape(-1, 1, 1)),
