@@ -4,7 +4,7 @@ import shutil
 import tempfile
 from zipfile import ZipFile
 import xarray as xr
-from infilling.evaluation_executer import EvaluationExecuter
+from infilling.evaluation_executor import EvaluationExecutor
 
 from station.station import StationData
 from train_station_twin.training_analysis import era5_vs_reconstructed_comparision_to_df, plot_n_steps_of_df
@@ -14,7 +14,7 @@ from era5.era5_download_hook import Era5DownloadHook
 from era5.era5_from_grib_to_nc import Era5DataFromGribToNc
 from era5.era5_for_station import DownloadEra5ForStation, Era5ForStationCropper
 
-class ValidationExecuter():
+class ValidationExecutor():
     
     def __init__(self, station: StationData, model_path: str, progress: ProgressStatus):
         self.station = station
@@ -83,7 +83,7 @@ class ValidationExecuter():
 
         self.progress.update_phase("Evaluating")
 
-        evaluation = EvaluationExecuter(
+        evaluation = EvaluationExecutor(
             station=self.station,
             model_path=self.model_path
         )

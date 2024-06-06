@@ -9,10 +9,10 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from station.data_submission import DataSubmission, data_storage
 from station.station import StationData
-from infilling.evaluation_executer import EvaluationExecuter
+from infilling.evaluation_executor import EvaluationExecutor
 from infilling.infilling_writer import InfillingWriter
-from train_station_twin.training_executer import TrainingExecuter
-from train_station_twin.validation_executer import ValidationExecuter
+from train_station_twin.training_executor import TrainingExecutor
+from train_station_twin.validation_executor import ValidationExecutor
 from utils.utils import ProgressStatus
 
 import time
@@ -55,7 +55,7 @@ def api_fill_in_at_data_submission(uid):
     if not data_submission.model_path:
         return "Model missing", 404
     
-    evaluation = EvaluationExecuter(
+    evaluation = EvaluationExecutor(
         station=data_submission.station,
         model_path=data_submission.model_path,
         progress=data_submission.progress)
@@ -89,7 +89,7 @@ async def api_train_at_data_submission(uid):
         iterations = int(iterations)
     except ValueError:
         return "Iterations count must be an integer", 400
-    training = TrainingExecuter(
+    training = TrainingExecutor(
         station=data_submission.station,
         progress=data_submission.progress,
         iterations=iterations
@@ -128,7 +128,7 @@ def get_pdf(uid):
         return "Data submission not found", 404
     if not data_submission.model_path:
         return "Model missing", 404
-    validation = ValidationExecuter(
+    validation = ValidationExecutor(
         station=data_submission.station,
         model_path=data_submission.model_path,
         progress=data_submission.progress

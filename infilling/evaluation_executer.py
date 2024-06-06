@@ -15,7 +15,7 @@ from station.station import StationData
 
 from utils.utils import FillAllTasWithValuesInNcFile
 
-class EvaluationExecuter:
+class EvaluationExecutor:
     def __init__(self, station: StationData, model_path, progress=None):
         self.model_path = model_path
         self.station = station

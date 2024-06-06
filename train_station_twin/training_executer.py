@@ -22,7 +22,7 @@ import re
 import numpy as np
 import time
 
-class TrainingExecuter():
+class TrainingExecutor():
 
     def __init__(self, station: StationData, progress: ProgressStatus, iterations, local=False):
         self.station = station

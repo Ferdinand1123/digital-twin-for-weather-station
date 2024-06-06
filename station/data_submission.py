@@ -161,6 +161,7 @@ class DataStorage:
             "uid": uid,
             "has_model": data.model_path is not None,
             "has_val": data.val_pdf_path and data.val_csv_path and data.val_zip_path,
+            "has_infilling": data.infilling_path is not None,
             "status": str(data.progress)
         } for uid, data in self._data_submissions.items() if data.cookie == cookie]
         return return_list
