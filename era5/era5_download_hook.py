@@ -2,16 +2,27 @@ import cdsapi
 from dotenv import load_dotenv
 import os
 
+# Load environment variables from .env file
 load_dotenv("copernicus_api.env")
 
 class Era5DownloadHook:
     
     def __init__(self, lat, lon):
-        self.cds = cdsapi.Client(
-            url="https://cds.climate.copernicus.eu/api/v2",
-            key=f"{os.getenv('UID')}:{os.getenv('API_KEY')}"
-        )
+        # Extract API URL and key from environment variables
+        url = os.getenv('url')  # CDS-Beta API URL
+        key = os.getenv('key')  # API key
+        
+        if not url or not key:
+            raise ValueError("API URL and key must be set in the environment file")
+        
+        print("Using URL:", url)
+        
+        # Initialize the cdsapi Client using the url and key from the .env file
+        self.cds = cdsapi.Client(url=url, key=key)
+        
         self.lon, self.lat = lon, lat
+        
+        # Define the coordinates for the bounding box
         self.coordinate_limits = {
             "north": self.lat + 1,
             "west": self.lon - 1,
@@ -53,7 +64,12 @@ class Era5DownloadHook:
         {
             "product_type": "reanalysis",
             "format": "grib",
-            "variable": "2m_temperature",
+            "variable": [
+                "2m_temperature", 
+                "total_precipitation",
+                "10m_u_component_of_wind",
+                "10m_v_component_of_wind",
+                "surface_pressure"],
             "area": [
                 self.coordinate_limits["north"],
                 self.coordinate_limits["west"] % 360,

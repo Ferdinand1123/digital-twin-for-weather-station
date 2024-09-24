@@ -1,0 +1,33 @@
+Timestamps:
+year: The year when the data was recorded.
+mon: The month when the data was recorded.
+day: The day when the data was recorded.
+hour: The hour of the day when the data was recorded.
+min: The minute within the hour when the data was recorded.
+
+Sensors and Their Measurements:
+bmp180_temp: Temperature measured by the BMP180 sensor (typically in degrees Celsius).
+bmp180_pres: Atmospheric pressure measured by the BMP180 sensor (typically in Pascals or hectopascals).
+bmp180_slp: Sea-level pressure calculated from the BMP180 sensor readings.
+bmp180_alt: Altitude calculated from the BMP180 sensor readings based on the pressure data.
+bmp280_temp: Temperature measured by the BMP280 sensor.
+bmp280_pres: Atmospheric pressure measured by the BMP280 sensor.
+bmp280_slp: Sea-level pressure calculated from the BMP280 sensor readings.
+bmp280_alt: Altitude calculated from the BMP280 sensor readings.
+bme_temp: Temperature measured by the BME280 sensor.
+bme_pres: Atmospheric pressure measured by the BME280 sensor.
+bme_slp: Sea-level pressure calculated from the BME280 sensor readings.
+bme_alt: Altitude calculated from the BME280 sensor readings.
+bme_hum: Humidity measured by the BME280 sensor (typically in percentage).
+htu_temp: Temperature measured by the HTU21D sensor.
+htu_hum: Humidity measured by the HTU21D sensor.
+mcp9808: Temperature measured by the MCP9808 sensor.
+
+Environmental and Weather Conditions:
+tipping: Data from a tipping bucket rain gauge, which measures precipitation. This typically counts the number of tips, each representing a specific amount of rainfall.
+vis_light: Visible light intensity measured by a light sensor (typically in lux).
+ir_light: Infrared light intensity measured by a light sensor.
+uv_light: Ultraviolet light intensity measured by a UV sensor (typically in UV index units).
+wind_dir: Wind direction, often measured in degrees from north (0-360 degrees).
+wind_speed: Wind speed, typically measured in meters per second (m/s) or kilometers per hour (km/h).
+

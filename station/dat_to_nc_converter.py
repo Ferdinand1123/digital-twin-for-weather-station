@@ -149,6 +149,7 @@ class DatToNcConverter:
 
         # use certain sensors
         df["tas"] = df[[self.tas_sensor]].mean(axis = 1)
+        
                 
         # convert temp from C to K
         df["tas"] = df["tas"] + 273.15
@@ -202,7 +203,7 @@ class DatToNcConverter:
         intersect_columns = list(set(self.dataframe.columns).intersection(set(mapping.keys())))
 
         # drop columns not in mapping
-        self.dataframe = self.dataframe[intersect_columns]
+        self.dataframe = self.dataframe[intersect_columns] # df[[a, b, c]]
         
         if self.hourly:
             self.dataframe = self.dataframe.dropna(subset=["tas"])
