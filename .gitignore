@@ -9,3 +9,4 @@ executed_trainings/*/target_*/
 executed_trainings/*/temp_*/
 executed_trainings/*/model_*/images/
 measurements/Test
+copernicus_api.env
