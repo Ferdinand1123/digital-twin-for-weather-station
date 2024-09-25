@@ -10,3 +10,4 @@ executed_trainings/*/temp_*/
 executed_trainings/*/model_*/images/
 measurements/Test
 copernicus_api.env
+station_data_as_nc
