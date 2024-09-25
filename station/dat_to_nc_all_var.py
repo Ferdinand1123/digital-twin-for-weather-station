@@ -20,7 +20,7 @@ from datetime import datetime
 import pandas as pd
 import tqdm
 import re
-import concurrent.futures
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 def circular_mean(series):
     """
@@ -64,8 +64,7 @@ class DatToNcAllVar:
     """
     Class to convert .dat files to a NetCDF (.nc) file, including all variables.
     """
-    def __init__(self, name, directory=None, target_directory=None, hourly=True,
-                 grid_blueprint=None, keep_original=False):
+    def __init__(self, name, directory=None, target_directory=None, hourly=True, keep_original=False):
         self.name = name
 
         # Use os.path.join for cross-platform compatibility
@@ -82,13 +81,12 @@ class DatToNcAllVar:
             os.makedirs(self.target_directory)
 
         self.files = self.get_files()
-        self.dataframe = None
-        self.original_df = None
-        self.keep_original = keep_original
+        self.dataframe = None  # processed data
+        self.original_df = None  # raw unprocessed data
+        self.keep_original = keep_original  # defines if raw data is stored in self.original_df
         self.nc_data = None
         self.meta_data = {}  # Initialize as empty dict
         self.hourly = hourly
-        self.grid_blueprint = grid_blueprint
 
     def get_files(self):
         """
@@ -101,34 +99,67 @@ class DatToNcAllVar:
         """
         Load a .dat file into a DataFrame and process it.
         """
-        # Load into DataFrame using specified separator and header
-        format_config = self.get_tas_format_config()
-        separator = format_config.get("separator", r"\s+")
-        header = format_config.get("header", 0)
-        file_path = os.path.join(self.directory, file)
-        df = pd.read_csv(file_path, sep=separator, header=header)
-        return self.resample_to_hourly_steps(df)
+        try:
+            # Load into DataFrame using specified separator and header
+            format_config = self.get_tas_format_config()
+            separator = format_config.get("separator", r"\s+")
+            header = format_config.get("header", 0)
+            file_path = os.path.join(self.directory, file)
+            df = pd.read_csv(file_path, sep=separator, header=header)
+            return self.resample_to_hourly_steps(df)
+        except Exception as e:
+            print(f"Error processing file {file}: {e}")
+            return pd.DataFrame()  # Return an empty DataFrame to avoid stopping the process
+
+    def read_raw_dataframe(self, file) -> pd.DataFrame:
+        """
+        Read a .dat file into a raw DataFrame without processing or resampling.
+        """
+        try:
+            # Load into pandas DataFrame, first line are the column names
+            format_config = self.get_tas_format_config()
+            separator = format_config.get("separator", r"\s+")
+            header = format_config.get("header", 0)
+            file_path = os.path.join(self.directory, file)
+            df = pd.read_csv(file_path, sep=separator, header=header)
+            # Rename columns for consistency
+            df.rename(columns={'mon': 'month', 'min': 'minute'}, inplace=True)
+            # Convert to datetime
+            required_columns = ['year', 'month', 'day', 'hour', 'minute']
+            if not all(col in df.columns for col in required_columns):
+                print(f"Missing required date columns in file {file}: {df.columns}")
+                return pd.DataFrame()
+            df['datetime'] = pd.to_datetime(df[required_columns])
+            # Set datetime as the index
+            df = df.set_index('datetime')
+            # Drop original date columns
+            df = df.drop(columns=required_columns)
+            return df
+
+        except Exception as e:
+            print(f"Error reading raw data from file {file}: {e}")
+            return pd.DataFrame()
 
     def extract_meta_data(self):
         """
         Extract metadata (latitude, longitude, elevation) from .rtf file.
         """
         meta_data = {}
-        # Define patterns for extracting information
-        location_pattern = re.compile(r'Location: ([\d.-]+) deg Lat, ([\d.-]+) deg Lon')
-        elevation_pattern = re.compile(r'Elevation: (\d+) m')
-
-        # Search for .rtf files in the directory
-        rtf_files = [file for file in os.listdir(self.directory) if file.endswith('.rtf')]
-
-        if not rtf_files:
-            print("Error: No .rtf files found in the directory.")
-            return meta_data
-
-        # Use the first .rtf file found
-        rtf_file_path = os.path.join(self.directory, rtf_files[0])
-
         try:
+            # Define patterns for extracting information
+            location_pattern = re.compile(r'Location:\s*([\d.-]+)\s*deg\s*Lat,\s*([\d.-]+)\s*deg\s*Lon')
+            elevation_pattern = re.compile(r'Elevation:\s*(\d+)\s*m')
+
+            # Search for .rtf files in the directory
+            rtf_files = [file for file in os.listdir(self.directory) if file.endswith('.rtf')]
+
+            if not rtf_files:
+                print("Error: No .rtf files found in the directory.")
+                return meta_data
+
+            # Use the first .rtf file found
+            rtf_file_path = os.path.join(self.directory, rtf_files[0])
+
             with open(rtf_file_path, 'r') as file:
                 content = file.read()
 
@@ -145,105 +176,133 @@ class DatToNcAllVar:
                 if match_elevation:
                     elevation = int(match_elevation.group(1))
                     meta_data['elevation'] = elevation
-        except FileNotFoundError:
-            print(f"Error: File {rtf_file_path} not found.")
 
+            return meta_data
+
+        except FileNotFoundError:
+            print("Error: Metadata file not found.")
+        except Exception as e:
+            print(f"Error extracting metadata: {e}")
         return meta_data
 
-
     def extract(self, first_n_files=None, progress=None):
-        # Initialize an empty list to store DataFrames
-        dataframes = []
-        if self.keep_original:
-            self.original_df = pd.DataFrame()
+        """
+        Extract data from all .dat files and combine into a single DataFrame.
+        """
+        # Initialize dictionaries to map futures to data types
+        future_to_data_type = {}
+        processed_dataframes = []
+        raw_dataframes = []
         print(f"Extracting {self.name}...")
+
         if first_n_files is None:
             first_n_files = len(self.files)
         files_to_process = self.files[:first_n_files]
 
-        # Use ThreadPoolExecutor for I/O-bound tasks or ProcessPoolExecutor for CPU-bound tasks - here, we use the latter since it is faster 
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            # Map the convert_to_dataframe function to the list of files
-            futures = [executor.submit(self.convert_to_dataframe, file) for file in files_to_process]
-            for future in tqdm.tqdm(concurrent.futures.as_completed(futures), total=len(futures)):
-                df = future.result()
-                dataframes.append(df)
-                if progress:
-                    progress.update_percentage(len(dataframes) / first_n_files * 100)
-        
-        '''    old way of doing it:
-            if first_n_files is None:
-                first_n_files = len(self.files)
-            c = 0
+        with ProcessPoolExecutor() as executor:
+            for file in files_to_process:
+                # Schedule the convert_to_dataframe method
+                future_processed = executor.submit(self.convert_to_dataframe, file)
+                future_to_data_type[future_processed] = 'processed'
+                if self.keep_original:
+                    # Schedule the read_raw_dataframe method
+                    future_raw = executor.submit(self.read_raw_dataframe, file)
+                    future_to_data_type[future_raw] = 'raw'
 
-            # Collect DataFrames in a list for efficient concatenation
-            dataframes = []
-            files_to_process = self.files[:first_n_files]
+            # Use as_completed to handle futures as they complete
+            for future in tqdm.tqdm(as_completed(future_to_data_type), total=len(future_to_data_type)):
+                data_type = future_to_data_type[future]
+                try:
+                    df = future.result()
+                    if df.empty:
+                        continue  # Skip empty DataFrames
+                    if data_type == 'processed':
+                        processed_dataframes.append(df)
+                    elif data_type == 'raw':
+                        raw_dataframes.append(df)
+                    if progress and data_type == 'processed':
+                        progress.update_percentage(len(processed_dataframes) / first_n_files * 100)
+                except Exception as e:
+                    print(f"Error processing {data_type} future: {e}")
 
-            for file in tqdm.tqdm(files_to_process):
-                if progress:
-                    progress.update_percentage(c / first_n_files * 100)
-                df = self.convert_to_dataframe(file)
-                dataframes.append(df)
-                c += 1
-        '''
-        
-        # Concatenate all DataFrames at once
-        self.dataframe = pd.concat(dataframes)
+        # Concatenate all processed DataFrames
+        if processed_dataframes:
+            self.dataframe = pd.concat(processed_dataframes)
+        else:
+            self.dataframe = pd.DataFrame()
+            print("No processed data available.")
+
+        # Concatenate and store the raw DataFrames if keep_original is True
+        if self.keep_original:
+            if raw_dataframes:
+                self.original_df = pd.concat(raw_dataframes)
+            else:
+                self.original_df = pd.DataFrame()
+                print("No raw data available.")
+
         return self.dataframe
-
 
     def resample_to_hourly_steps(self, df):
         """
         Convert date columns to datetime, clean data, and resample to hourly intervals.
         """
-        # Rename columns for consistency
-        df.rename(columns={'mon': 'month', 'min': 'minute'}, inplace=True)
+        try:
+            # Rename columns for consistency
+            df.rename(columns={'mon': 'month', 'min': 'minute'}, inplace=True)
 
-        # Convert to datetime
-        df['datetime'] = pd.to_datetime(df[['year', 'month', 'day', 'hour', 'minute']])
-        df = df.drop(columns=['year', 'month', 'day', 'hour', 'minute'])
+            # Ensure all required columns are present
+            required_columns = ['year', 'month', 'day', 'hour', 'minute']
+            if not all(col in df.columns for col in required_columns):
+                print(f"Missing required date columns in DataFrame: {df.columns}")
+                return pd.DataFrame()
 
-        # Replace placeholder values with NaN
-        df = df.replace(-999.99, np.nan)
+            # Convert date columns to datetime
+            df['datetime'] = pd.to_datetime(df[required_columns])
+            df = df.drop(columns=required_columns)
 
-        # Identify temperature sensor columns
-        temperature_sensors = [col for col in df.columns if 'temp' in col or col == 'mcp9808']
+            # Replace placeholder values with NaN
+            df = df.replace(-999.99, np.nan)
 
-        # Clean temperature data using vectorized operations
-        for sensor in temperature_sensors:
-            df[sensor] = df[sensor].where(df[sensor].between(-45, 45))
+            # Identify temperature sensor columns
+            temperature_sensors = [col for col in df.columns if 'temp' in col or col == 'mcp9808']
 
-        # Create 'tas' as the average of available temperature sensors
-        if temperature_sensors:
-            df['tas'] = df[temperature_sensors].mean(axis=1)
-            # Convert from Celsius to Kelvin
-            df['tas'] = df['tas'] + 273.15
+            # Clean temperature data using vectorized operations
+            for sensor in temperature_sensors:
+                df[sensor] = df[sensor].where(df[sensor].between(-45, 45))
 
-        # Set datetime as the index
-        df = df.set_index("datetime")
+            # Create 'tas' as the average of available temperature sensors
+            if temperature_sensors:
+                df['tas'] = df[temperature_sensors].mean(axis=1)
+                # Convert from Celsius to Kelvin
+                df['tas'] = df['tas'] + 273.15
 
-        if self.hourly:
-            # Resample to hourly intervals with custom aggregation
-            hourly_df = pd.DataFrame()
-            for var_name in df.columns:
-                hourly_series = df[var_name].resample('h').apply(custom_aggregation(var_name))
-                hourly_df[var_name] = hourly_series
-        else:
-            # Keep original minutely data
-            hourly_df = df
+            # Set datetime as the index
+            df = df.set_index("datetime")
 
-        return hourly_df
+            if self.hourly:
+                # Resample to hourly intervals with custom aggregation
+                hourly_df = pd.DataFrame()
+                for var_name in df.columns:
+                    hourly_series = df[var_name].resample('h').apply(custom_aggregation(var_name))
+                    hourly_df[var_name] = hourly_series
+            else:
+                # Keep original minutely data
+                hourly_df = df
+
+            return hourly_df
+
+        except Exception as e:
+            print(f"Error during resampling: {e}")
+            return pd.DataFrame()
 
     def transform(self):
         """
         Final transformations on the combined DataFrame.
         """
-        if self.keep_original:
-            self.original_df = self.dataframe.copy()
-            self.original_df = self.original_df.reindex(
-                pd.date_range(start=self.dataframe.index.min(), end=self.dataframe.index.max(), freq="h")
-            )
+        # Ensure the dataframe is not empty
+        if self.dataframe is None or self.dataframe.empty:
+            print("No data to transform.")
+            return
 
         # Ensure all data types are appropriate
         for col in self.dataframe.columns:
@@ -253,44 +312,54 @@ class DatToNcAllVar:
         """
         Create an xarray Dataset from the DataFrame and save it to a NetCDF file.
         """
-        # Prepare data variables for the dataset
-        data_vars = {}
-        for var_name in self.dataframe.columns:
-            # Reshape data to match dimensions
-            data = self.dataframe[var_name].values.reshape(-1, 1, 1)
-            data_vars[var_name] = (["time", "lat", "lon"], data)
+        try:
+            # Ensure the dataframe is not empty
+            if self.dataframe is None or self.dataframe.empty:
+                print("No data to load into NetCDF.")
+                return None
 
-        # Use default coordinates if metadata is missing
-        default_latitude = 0.0  # Replace with your default latitude
-        default_longitude = 0.0  # Replace with your default longitude
+            # Prepare data variables for the dataset
+            data_vars = {}
+            for var_name in self.dataframe.columns:
+                # Reshape data to match dimensions
+                data = self.dataframe[var_name].values.reshape(-1, 1, 1)
+                data_vars[var_name] = (["time", "lat", "lon"], data)
 
-        lat = self.meta_data.get('latitude', default_latitude)
-        lon = self.meta_data.get('longitude', default_longitude)
+            # Use default coordinates if metadata is missing
+            default_latitude = 0.0  # Replace with your default latitude
+            default_longitude = 0.0  # Replace with your default longitude
 
-        # Create the xarray Dataset with all variables
-        ds = xr.Dataset(
-            data_vars,
-            coords={
-                "time": self.dataframe.index.values,
-                "lat": [lat],  # Use lat directly
-                "lon": [lon],  # Use lon directly
-            },
-        )
+            lat = self.meta_data.get('latitude', default_latitude)
+            lon = self.meta_data.get('longitude', default_longitude)
 
-        # Warning if lat or lon is not found
-        if lat == default_latitude or lon == default_longitude:
-            print("Warning: Latitude or Longitude not found in metadata. Using default values.")
+            # Create the xarray Dataset with all variables
+            ds = xr.Dataset(
+                data_vars,
+                coords={
+                    "time": self.dataframe.index.values,
+                    "lat": [lat],  # Use lat directly
+                    "lon": [lon],  # Use lon directly
+                },
+            )
 
-        # Save the dataset to a NetCDF file
-        save_to_path = os.path.join(location, f"{self.name.lower()}.nc")
-        print(f"Saving to {save_to_path}")
+            # Warning if lat or lon is not found
+            if lat == default_latitude or lon == default_longitude:
+                print("Warning: Latitude or Longitude not found in metadata. Using default values.")
 
-        # Remove existing file if necessary
-        if os.path.exists(save_to_path):
-            os.remove(save_to_path)
+            # Save the dataset to a NetCDF file
+            save_to_path = os.path.join(location, f"{self.name.lower()}.nc")
+            print(f"Saving to {save_to_path}")
 
-        ds.to_netcdf(save_to_path)
-        return save_to_path
+            # Remove existing file if necessary
+            if os.path.exists(save_to_path):
+                os.remove(save_to_path)
+
+            ds.to_netcdf(save_to_path)
+            return save_to_path
+
+        except Exception as e:
+            print(f"Error saving NetCDF file: {e}")
+            return None
 
     def execute(self, location=None, first_n_files=None):
         """
@@ -308,7 +377,6 @@ class DatToNcAllVar:
             location = self.target_directory
         self.load(location)
 
-
     def get_tas_format_config(self):
         """
         Configuration for TAS format (if needed).
@@ -318,7 +386,36 @@ class DatToNcAllVar:
             "header": 0,
             "digit_precision": 2,
         }
-    
+
+'''
+Example usage
+
+# Initialize the converter
+converter = DatToNcAllVar(
+    name="Vienna_AllVar",
+    directory="measurements/Vienna",
+    target_directory="station_data_as_nc",
+    hourly=True,
+    keep_original=True
+)
+
+# Run the conversion process
+converter.execute()
+
+# Access and inspect the raw DataFrame
+raw_df = converter.original_df
+if raw_df is not None:
+    print(raw_df.info())
+    print(raw_df.head())
+
+# Access and inspect the processed DataFrame
+processed_df = converter.dataframe
+if processed_df is not None:
+    print(processed_df.info())
+    print(processed_df.head())
+'''
+
+
 
 ''' Example usage
 
@@ -335,4 +432,14 @@ converter = DatToNcAllVar(
 converter.execute()
 
 ds = xr.open_dataset("station_data_as_nc/vienna.nc")
+
+# Access and inspect the raw DataFrame
+raw_df = converter.original_df
+print(raw_df.info())
+print(raw_df.head())
+
+# Access and inspect the processed DataFrame
+processed_df = converter.dataframe
+print(processed_df.info())
+print(processed_df.head())
 '''
