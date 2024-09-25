@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 from utils.utils import pretty_lat, pretty_lon
 
 from station.dat_to_nc_converter import DatToNcConverter
+# from station.dat_to_nc_convertercopy2 import DatToNcConverter
 
 class StationData:
         
@@ -24,7 +25,7 @@ class StationData:
             plot_df = self.converter.dataframe.copy()
             plot_df = plot_df.reindex(pd.date_range(start=plot_df.index.min(),
                                                end=plot_df.index.max(),
-                                               freq='H'))
+                                               freq='h'))
             
             plt.plot(plot_df.index, plot_df["tas"]-273.15, label="Measurements excluded in training")
         
@@ -36,7 +37,7 @@ class StationData:
             plot_df = self.converter.dataframe.copy()
             plot_df = plot_df.reindex(pd.date_range(start=plot_df.index.min(),
                                                end=plot_df.index.max(),                                          
-                                               freq='H'))
+                                               freq='h'))
             
             plt.plot(plot_df.index, plot_df["tas"]-273.15, label="Measurements used for training")
             
