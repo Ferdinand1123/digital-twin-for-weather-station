@@ -43,6 +43,7 @@ def custom_aggregation(var_name):
         # Data quality checks
         if series.isna().sum() > 20:
             return np.nan
+        # 3 times same value exclude and mark as nan, except for tipping which is oftern 0
         if var_name != 'tipping' and series.nunique() <= 3:
             return np.nan
 
@@ -122,6 +123,7 @@ class DatToNcAllVar:
             header = format_config.get("header", 0)
             file_path = os.path.join(self.directory, file)
             df = pd.read_csv(file_path, sep=separator, header=header)
+
             # Rename columns for consistency
             df.rename(columns={'mon': 'month', 'min': 'minute'}, inplace=True)
             # Convert to datetime
@@ -247,9 +249,6 @@ class DatToNcAllVar:
         Convert date columns to datetime, clean data, and resample to hourly intervals.
         """
         try:
-            # Rename columns for consistency
-            df.rename(columns={'mon': 'month', 'min': 'minute'}, inplace=True)
-
             # Ensure all required columns are present
             required_columns = ['year', 'month', 'day', 'hour', 'minute']
             if not all(col in df.columns for col in required_columns):

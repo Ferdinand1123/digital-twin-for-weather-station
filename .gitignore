@@ -12,4 +12,6 @@ measurements/Test
 copernicus_api.env
 station_data_as_nc
 station_data_raw_original
+station_data_processed
+station_data_raw
 eda2.ipynb
