@@ -188,6 +188,9 @@ class DatToNcConverter2:
                 # Exclude if the series has fewer than 3 unique values (except for 'tipping')
                 if var_name != 'tipping' and series.nunique() <= 3:
                     return np.nan
+                #if var_name == 'mcp9809':
+                #   df = df.replace(0.00, np.nan)
+
 
                 if var_name == 'tipping':
                     # Sum for precipitation
