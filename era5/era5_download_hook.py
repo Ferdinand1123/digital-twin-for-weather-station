@@ -48,6 +48,7 @@ class Era5DownloadHook:
             "days": range(1, 32),
             "hours": range(0, 24)
         }, target_folder + f"/{year}_{month}.grib")
+
         
     def download_year(self, year, target_folder):
         print(f"Downloading {year}")

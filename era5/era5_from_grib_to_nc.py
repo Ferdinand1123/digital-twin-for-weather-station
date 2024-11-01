@@ -23,7 +23,7 @@ class Era5DataFromGribToNc:
     
     def _convert_grib_to_nc(self, source_path, file):
         nc_copied_path = os.path.join(self.temp_dir_path, file.replace('.grib', '.nc'))
-        cdo_command = f"cdo -f nc copy {os.path.join(source_path, file)} {nc_copied_path}"
+        cdo_command = f"cdo -f nc4 copy {os.path.join(source_path, file)} {nc_copied_path}"
         subprocess.run(cdo_command, shell=True, check=True)
         assert os.path.exists(nc_copied_path), "Conversion failed"
         
