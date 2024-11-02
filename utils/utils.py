@@ -152,14 +152,27 @@ def pretty_lon(lon, precision=0):
         return f"{abs(lon)}°W"
 
 
-def find_nearest_lon_lat(asc_lon_list, desc_lat_list, station_lon, station_lat):
+def find_nearest_lon_lat(asc_lon_list, asc_lat_list, station_lon, station_lat):
     print("search:", station_lon , " in asc_lon_list:", asc_lon_list)
-    lat_nearest_idx = np.searchsorted(
-        list(reversed(desc_lat_list)), station_lat)
-    lat_nearest_idx = len(desc_lat_list) - lat_nearest_idx
+    
+    # Find the nearest longitude index
     lon_nearest_idx = np.searchsorted(asc_lon_list, station_lon)
-    print("returning:", lon_nearest_idx)
+    if lon_nearest_idx == len(asc_lon_list):
+        lon_nearest_idx -= 1
+    elif lon_nearest_idx > 0 and (abs(station_lon - asc_lon_list[lon_nearest_idx-1]) < abs(station_lon - asc_lon_list[lon_nearest_idx])):
+        lon_nearest_idx -= 1
+    print("nearest_lon_idx:", lon_nearest_idx)
+    
+    # Find the nearest latitude index
+    lat_nearest_idx = np.searchsorted(asc_lat_list, station_lat)
+    if lat_nearest_idx == len(asc_lat_list):
+        lat_nearest_idx -= 1
+    elif lat_nearest_idx > 0 and (abs(station_lat - asc_lat_list[lat_nearest_idx-1]) < abs(station_lat - asc_lat_list[lat_nearest_idx])):
+        lat_nearest_idx -= 1
+    print("nearest_lat_idx:", lat_nearest_idx)
+    
     return lon_nearest_idx, lat_nearest_idx
+
 
 def plot_measurements_df(df):
     fig, ax = plt.subplots(1, 1)

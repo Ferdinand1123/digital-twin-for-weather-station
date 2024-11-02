@@ -20,17 +20,27 @@ class Era5DataFromGribToNc:
             if file.endswith(".grib"):
                 print(f"Found {file}")
                 self._convert_grib_to_nc(source_path, file)
-    
-    def _convert_grib_to_nc(self, source_path, file):
-        nc_copied_path = os.path.join(self.temp_dir_path, file.replace('.grib', '.nc'))
-        cdo_command = f"cdo -f nc4 copy {os.path.join(source_path, file)} {nc_copied_path}"
-        subprocess.run(cdo_command, shell=True, check=True)
-        assert os.path.exists(nc_copied_path), "Conversion failed"
         
-        # Open the NetCDF file and rename variables
-        ds = xr.open_dataset(nc_copied_path)
+    def _convert_grib_to_nc(self, source_path, file):
+        # Paths for original and renamed NetCDF files
+        nc_original_path = os.path.join(self.temp_dir_path, file.replace('.grib', '.nc'))
+        nc_renamed_path = os.path.join(self.temp_dir_path, file.replace('.grib', '_renamed.nc'))
+        
+        # Convert GRIB to NetCDF using cdo
+        cdo_command = f"cdo -f nc4 copy {os.path.join(source_path, file)} {nc_original_path}"
+        subprocess.run(cdo_command, shell=True, check=True)
+        assert os.path.exists(nc_original_path), "Conversion failed"
+        
+        # Open the original NetCDF file and rename variables
+        ds = xr.open_dataset(nc_original_path)
         ds = self._rename_variables(ds)
-        ds.to_netcdf(nc_copied_path)
+        
+        # Save to a new NetCDF file to avoid permission issues
+        ds.to_netcdf(nc_renamed_path)
+        assert os.path.exists(nc_renamed_path), "Renaming variables failed"
+        
+        # Optionally, remove the original NetCDF file if no longer needed
+        os.remove(nc_original_path)
    
     def _rename_variables(self, ds):
         variable_mapping = {
