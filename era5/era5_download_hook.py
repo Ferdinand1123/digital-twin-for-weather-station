@@ -66,11 +66,12 @@ class Era5DownloadHook:
             "product_type": "reanalysis",
             "format": "grib",
             "variable": [
-                "2m_temperature", 
-                "total_precipitation",
-                "10m_u_component_of_wind",
                 "10m_v_component_of_wind",
-                "surface_pressure"],
+                "2m_dewpoint_temperature",
+                "2m_temperature",
+                "surface_pressure",
+                "total_precipitation"
+                ],
             "area": [
                 self.coordinate_limits["north"],
                 self.coordinate_limits["west"] % 360,
@@ -83,3 +84,6 @@ class Era5DownloadHook:
             "time": [f"{hour:02d}:00" for hour in date_info.get("hours")]
 
         }, save_to_file_path)
+
+
+ #        "area": [15, -58, 11, 62]
