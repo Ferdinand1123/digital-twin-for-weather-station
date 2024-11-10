@@ -28,17 +28,11 @@ class Era5DownloadHook:
         
         # Define the coordinates for the bounding box
         self.coordinate_limits = {
-            "north": self.lat + 1,
-            "west": self.lon - 1,
-            "south": self.lat - 1,
-            "east": self.lon + 1,
+            "north": self.lat + 2,
+            "west": self.lon - 2,
+            "south": self.lat - 2,
+            "east": self.lon + 2,
         }
-
-    def download_period(self, start_year, end_year, target_folder):
-        for year in range(start_year, end_year + 1):
-            for month in range(1, 13):
-                self.download_month(year, month, target_folder)
-        # Concatenate all downloaded files into a single dataframe after downloading
 
     def download_month_parallel(self, year, month, target_folder):
         print(f"Downloading {year}-{month:02d}")
@@ -50,12 +44,17 @@ class Era5DownloadHook:
         }, f"{target_folder}/{year}_{month:02d}.grib")
 
     def download_period_parallel(self, start_year, end_year, target_folder):
-        with ThreadPoolExecutor(max_workers=4) as executor:  # Adjust max_workers based on system capacity
+        with ThreadPoolExecutor(max_workers=6) as executor:  # Adjust max_workers based on system capacity
             futures = [
                 executor.submit(self.download_month_parallel, year, month, target_folder)
                 for year in range(start_year, end_year + 1)
                 for month in range(1, 13)
             ]
+
+    def download_period(self, start_year, end_year, target_folder):
+            for year in range(start_year, end_year + 1):
+                for month in range(1, 13):
+                    self.download_month(year, month, target_folder)
 
     def download_month(self, year, month, target_folder):
         print(f"Downloading {year}-{month:02d}")
@@ -71,8 +70,9 @@ class Era5DownloadHook:
             'reanalysis-era5-single-levels',
             {
                 "product_type": "reanalysis",
-                "format": "netcdf",
+                "format": "grib",
                 "variable": [
+                    "10m_u_component_of_wind",
                     "10m_v_component_of_wind",
                     "2m_dewpoint_temperature",
                     "2m_temperature",
@@ -93,8 +93,4 @@ class Era5DownloadHook:
             save_to_file_path
         )
 
-    # Placeholder function for loading a .grib file into a dataframe (requires implementation)
-    def load_grib_to_dataframe(self, file_path):
-        # Implement loading logic (e.g., using xarray or pygrib)
-        pass
 

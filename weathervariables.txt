@@ -24,7 +24,7 @@ htu_hum: Humidity measured by the HTU21D sensor.
 mcp9808: Temperature measured by the MCP9808 sensor.
 
 Environmental and Weather Conditions:
-tipping: Data from a tipping bucket rain gauge, which measures precipitation. This typically counts the number of tips, each representing a specific amount of rainfall.
+tipping: Data from a tipping bucket rain gauge, which measures precipitation. This typically counts the number of tips, each representing a specific amount of rainfall. Here 0,2mm per tip which in turn means 0,2l/m^2 per tip. 
 vis_light: Visible light intensity measured by a light sensor (typically in lux).
 ir_light: Infrared light intensity measured by a light sensor.
 uv_light: Ultraviolet light intensity measured by a UV sensor (typically in UV index units).
