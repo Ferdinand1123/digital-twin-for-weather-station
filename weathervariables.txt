@@ -28,6 +28,14 @@ tipping: Data from a tipping bucket rain gauge, which measures precipitation. Th
 vis_light: Visible light intensity measured by a light sensor (typically in lux).
 ir_light: Infrared light intensity measured by a light sensor.
 uv_light: Ultraviolet light intensity measured by a UV sensor (typically in UV index units).
-wind_dir: Wind direction, often measured in degrees from north (0-360 degrees).
+wind_dir: Wind direction, often measured in degrees from north (0-360 degrees) 
 wind_speed: Wind speed, typically measured in meters per second (m/s) or kilometers per hour (km/h).
 
+Uncertainty: 
+Parameter		    Resolution		Uncertainty
+Temperature (°C)		0.1 °C		±0.4 °C
+Pressure (hPa)	   	    0.1 hPa		±0.4 hPa
+Relative Humidity (%)	1 %	    	±5.7 %
+Wind Speed (m/s)		0.1 m/s		±0.8 m/s
+Wind Direction (deg)	1 deg		±5 deg
+Rainfall (mm)	    	0.2 mm		10%

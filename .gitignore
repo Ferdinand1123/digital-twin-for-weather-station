@@ -7,6 +7,7 @@ era5_data
 ERA5_DRKZ
 era5_vienna
 ERA5hook_marshall
+ERA5_vienna_allvar
 simplified_training
 testing_training
 
@@ -26,3 +27,5 @@ station_data_raw
 eda2.ipynb
 converted_era5_data
 
+Training_Marshall 
+prepare_training

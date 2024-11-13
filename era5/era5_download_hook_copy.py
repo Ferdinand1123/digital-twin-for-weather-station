@@ -85,7 +85,7 @@ class Era5DownloadHook:
                     self.coordinate_limits["south"],
                     self.coordinate_limits["east"] % 360,
                 ],
-                "year": date_info.get("years"),
+                "year": [str(year) for year in date_info.get("years")],
                 "month": [f"{month:02d}" for month in date_info.get("months")],
                 "day": [f"{day:02d}" for day in date_info.get("days")],
                 "time": [f"{hour:02d}:00" for hour in date_info.get("hours")]
