@@ -10,6 +10,7 @@ ERA5hook_marshall
 ERA5_vienna_allvar
 simplified_training
 testing_training
+WMHH
 
 .vscode
 __pycache__
@@ -28,4 +29,6 @@ eda2.ipynb
 converted_era5_data
 
 Training_Marshall 
+Training_Vienna
+Training_Babados   
 prepare_training

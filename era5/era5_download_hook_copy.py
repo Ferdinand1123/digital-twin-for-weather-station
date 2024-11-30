@@ -1,10 +1,7 @@
 import cdsapi
 from dotenv import load_dotenv
 import os
-import pandas as pd
-from glob import glob
 from concurrent.futures import ThreadPoolExecutor
-
 
 # Load environment variables from .env file
 load_dotenv("copernicus_api.env")
@@ -43,18 +40,18 @@ class Era5DownloadHook:
             "hours": range(0, 24)
         }, f"{target_folder}/{year}_{month:02d}.grib")
 
-    def download_period_parallel(self, start_year, end_year, target_folder):
+    def download_period_parallel(self, years, months, target_folder):
         with ThreadPoolExecutor(max_workers=6) as executor:  # Adjust max_workers based on system capacity
             futures = [
                 executor.submit(self.download_month_parallel, year, month, target_folder)
-                for year in range(start_year, end_year + 1)
-                for month in range(1, 13)
+                for year in years
+                for month in months
             ]
 
-    def download_period(self, start_year, end_year, target_folder):
-            for year in range(start_year, end_year + 1):
-                for month in range(1, 13):
-                    self.download_month(year, month, target_folder)
+    def download_period(self, years, months, target_folder):
+        for year in years:
+            for month in months:
+                self.download_month(year, month, target_folder)
 
     def download_month(self, year, month, target_folder):
         print(f"Downloading {year}-{month:02d}")
@@ -92,5 +89,3 @@ class Era5DownloadHook:
             },
             save_to_file_path
         )
-
-

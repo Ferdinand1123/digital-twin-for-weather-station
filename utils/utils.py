@@ -294,8 +294,6 @@ def aggregate_per_timestep_xr(data: xr.Dataset, methods: list = ["median"], vari
 
 
 
-
-
 def calculate_metrics(ds1: xr.DataArray, ds2: xr.DataArray, var: str, output_path: str = None) -> dict:
     """
     Calculate R^2, RMSE, and Pearson correlation between two xarray DataArrays.
