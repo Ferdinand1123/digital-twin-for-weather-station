@@ -1,6 +1,7 @@
 import os
 import shutil
 import time
+import numpy as np
 import xarray as xr
 import logging
 
@@ -108,6 +109,21 @@ class TrainingPreparation:
         try:
             ds = xr.open_dataset(file_path)
             ds = ds.astype('float32')
+
+            # check if one variable is constant     
+            constant_vars = []
+            for var_name in ds.data_vars:
+                data_vars = ds[var_name] 
+                if {'time', 'lat', 'lon'}.issubset(data_vars.dims):
+                    data_at_timestep = data_vars.isel(time=0).values
+                    if np.all(data_at_timestep == data_at_timestep.flat[0]):
+                        constant_vars.append(var_name)
+
+            if constant_vars:
+                logging.info(f"Variables with constant data over lat-lon at time {file_path} : {constant_vars}")
+            else:
+                logging.info(f"No variables have constant data over lat-lon at time {file_path}")
+
             ds.to_netcdf(file_path)
             ds.close()
             logging.info(f"Converted {file_path} to float32.")
@@ -134,7 +150,9 @@ class TrainingPreparation:
             output_time = ds_output['time']
 
             if not input_time.equals(output_time):
-                logging.error(f"Time axes do not match between {input_file} and {output_file}.")
+                diff_times = set(ds_input['time'].values) ^ set(ds_output['time'].values)
+
+                logging.error(f"Time axes do not match between {input_file} and {output_file}. Different times: {diff_times}")
                 ds_input.close()
                 ds_output.close()
                 return False
@@ -186,13 +204,15 @@ class TrainingPreparation:
             return False
 
     def _write_common_args(self, common_args_path, input_filename='input.nc', output_filename='output.nc', data_types_in="tas", data_types_out="tas",
-                        n_target_data=1, encoding_layers=3, pooling_layers=0,
-                        device='cpu', n_filters=18, out_channels=1,
-                        loss_criterion=3):
+                        n_target_data=1, encoding_layers="3", pooling_layers="0",
+                        device='cpu', conv_factor=64, out_channels=1,
+                        loss_criterion=3, min_bounds=None, max_bounds=None):
         """
         Retrieves the common arguments for both training and evaluation.
 
         Args:
+            common_args_path (str, optional): Path to save the common arguments file
+                Defaults to 'common_args.txt' in the station directory.
             input_filename (str): Name of the input data file.
             output_filename (str): Name of the output data file.
             data_types_in (str): Data type(s) for the input data.
@@ -201,31 +221,38 @@ class TrainingPreparation:
             encoding_layers (int, optional): Number of encoding layers. Defaults to 3.
             pooling_layers (int, optional): Number of pooling layers. Defaults to 0.
             device (str, optional): Device used by PyTorch ('cuda' or 'cpu'). Defaults to 'cpu'.
-            n_filters (int, optional): Number of filters. Defaults to 18.
+            n_filters (int, optional): Number of filters. Defaults to 18m - Not used anymore
             out_channels (int, optional): Number of output channels. Defaults to 1.
             loss_criterion (int, optional): Index defining the loss function. Defaults to 3.
             normalize_data (bool, optional): Whether to normalize data. Defaults to True.
-
         Returns:
-            list: A list of common argument strings.
+            str: The path to the common arguments file.
         """
 
         if common_args_path is None:
             common_args_path = os.path.join(self.station_dir, 'common_args.txt')
         
-        common_args = f"""
---data-root-dir {self.data_dir}
---data-names {input_filename},{output_filename}
---data-types {data_types_in},{data_types_out}
---n-target-data {n_target_data}
---encoding-layers {encoding_layers}
---pooling-layers {pooling_layers}
---device {device}
---n-filters {n_filters}
---out-channels {out_channels}
---loss-criterion {loss_criterion}
---normalize-data
-        """.strip()
+        common_args_list = [
+            f"--data-root-dir {self.data_dir}",
+            f"--data-names {input_filename},{output_filename}",
+            f"--data-types {data_types_in},{data_types_out}",
+            f"--n-target-data {n_target_data}",
+            f"--encoding-layers {encoding_layers}",
+            f"--pooling-layers {pooling_layers}",
+            f"--device {device}",
+            f"--conv-factor {conv_factor}",
+            f"--out-channels {out_channels}",
+            f"--loss-criterion {loss_criterion}",
+            "--normalize-data",
+        ]
+
+        if min_bounds is not None:
+            common_args_list.append(f"--min-bounds {min_bounds}")
+        if max_bounds is not None:
+            common_args_list.append(f"--max-bounds {max_bounds}")
+
+        common_args = '\n'.join(common_args_list)
+
         try:
             with open(common_args_path, 'w') as f:
                 f.write(common_args)  # Ensure the file ends with a newline
@@ -241,8 +268,8 @@ class TrainingPreparation:
                               input_filename='input.nc', output_filename='output.nc',
                               data_types_in="tas", data_types_out="tas",
                               n_target_data=1, encoding_layers=3, pooling_layers=0,
-                              device='cpu', n_filters=18, out_channels=1,
-                              loss_criterion=3):
+                              device='cpu', conv_factor = 64, out_channels=1,
+                              loss_criterion=3, min_bounds=None, max_bounds=None):
         """
         Prepares the training arguments by writing common args and training-specific args,
         and saves them to a training arguments text file.
@@ -281,9 +308,11 @@ class TrainingPreparation:
             encoding_layers=encoding_layers,
             pooling_layers=pooling_layers,
             device=device,
-            n_filters=n_filters,
+            conv_factor=conv_factor,
             out_channels=out_channels,
-            loss_criterion=loss_criterion
+            loss_criterion=loss_criterion,
+            min_bounds=min_bounds,
+            max_bounds=max_bounds
             )
         
 
@@ -310,38 +339,40 @@ class TrainingPreparation:
             logging.error(f"Failed to write training arguments to {output_path}: {e}")
             raise
 
-    def prepare_eval_args(self, model_path, output_dir, model_name="best.pth", output_path=None):
+    def prepare_eval_args(self):
         """
         Prepares the evaluation arguments by appending evaluation-specific args to common args,
         and saves them to an evaluation arguments text file.
 
         Args:
-            model_path (str): Full path to the folder of trained model file (e.g., 'model/ckpt').
-            output_dir (str): Directory where the evaluation outputs will be stored.
+            model_dir (str, optional): Path to the model directory. Defaults to 'model/ckpt' in the station directory.
+            eval_dir (str, optional): Directory where evaluation outputs will be stored.
+                                    Defaults to 'model/eval' in the station directory.
             output_path (str, optional): Path to save the evaluation arguments file.
-                                         Defaults to 'eval_args.txt' in the station directory.
-
+                                        Defaults to 'eval_args.txt' in the station directory.
+            common_args_path (str, optional): Path to the common arguments file.
+                                            Defaults to 'common_args.txt' in the station directory.
         Returns:
             str: Path to the evaluation arguments file.
-        """
-        if output_path is None:
-            output_path = os.path.join(self.station_dir, 'eval_args.txt')
+         """
+        
+        output_path = os.path.join(self.station_dir, 'eval_args.txt')
 
-        if output_dir is None:
-            output_dir = os.path.join(self.station_dir, 'evaluation_outputs')  
-
+ 
         # Define common_args.txt path
         common_args_path = os.path.join(self.station_dir, 'common_args.txt')
 
 
         # Define evaluation-specific arguments
-        model_dir = model_path
-        model_name = model_name
+        model_dir =  os.path.join(self.model_dir, 'ckpt')
+
+        eval_dir = os.path.join(self.model_dir, "eval")
+        os.makedirs(eval_dir, exist_ok=True)
 
         eval_specific_args = f"""
 --model-dir {model_dir}
---model-names {model_name}
---evaluation-dirs {output_dir}
+--model-names best.pth
+--evaluation-dirs {eval_dir}
 --log-dir {self.log_dir}
 --use-train-stats
         """.strip()
@@ -353,9 +384,9 @@ class TrainingPreparation:
                 common_content = f.read() 
             with open(output_path, 'w') as f:
                 f.write(common_content + '\n' + eval_specific_args)
-            logging.info(f"Training arguments saved to {output_path}.")
+            logging.info(f"Evaluation arguments saved to {output_path}.")
             return output_path
         except Exception as e:
-            logging.error(f"Failed to write training arguments to {output_path}: {e}")
+            logging.error(f"Failed to write Evaluation arguments to {output_path}: {e}")
             raise
 
